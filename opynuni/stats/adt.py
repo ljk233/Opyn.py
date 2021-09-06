@@ -20,33 +20,33 @@ class ZTestADT:
             res: a tuple of floats
             prec: precision to return the results
         """
-        self.zstat: float = res[0]
-        self.pval: float = res[1]
-        self.prec: int = prec
+        self._zstat: float = res[0]
+        self._pval: float = res[1]
+        self._prec: int = prec
 
     @property
     def zstat(self) -> float:
         """
         """
-        return self.zstat
+        return self._zstat
 
     @property
     def pval(self) -> float:
         """
         """
-        return self.pval
+        return self._pval
 
     @property
     def prec(self) -> float:
         """
         """
-        return self.prec
+        return self._prec
 
     @prec.setter
-    def prec(self, num: int) -> float:
+    def prec(self, num: int) -> None:
         """
         """
-        self.prec = num
+        self._prec = num
 
     def __str__(self) -> str:
         return (
@@ -71,33 +71,33 @@ class ConfIntADT:
             res: a tuple of floats
             prec: precision to return the results
         """
-        self.lower: float = res[0]
-        self.upper: float = res[1]
-        self.prec: int = prec
+        self._lower: float = res[0]
+        self._upper: float = res[1]
+        self._prec: int = prec
 
     @property
     def lower(self) -> float:
         """
         """
-        return self.lower
+        return self._lower
 
     @property
     def upper(self) -> float:
         """
         """
-        return self.upper
+        return self._upper
 
     @property
     def prec(self) -> float:
         """
         """
-        return self.prec
+        return self._prec
 
     @prec.setter
-    def prec(self, num: int) -> float:
+    def prec(self, num: int) -> None:
         """
         """
-        self.prec = num
+        self._prec = num
 
     def __str__(self) -> str:
         return (
@@ -123,33 +123,33 @@ class NormADT:
             var: variance of normal dist
             prec: precision to return the results
         """
-        self.mean: float = mean
-        self.var = var
-        self.prec: int = prec
+        self._mean: float = mean
+        self._var = var
+        self._prec: int = prec
 
     @property
     def mean(self) -> float:
         """
         """
-        return self.mean
+        return self._mean
 
     @property
     def var(self) -> float:
         """
         """
-        return self.var
+        return self._var
 
     @property
     def prec(self) -> float:
         """
         """
-        return self.prec
+        return self._prec
 
     @prec.setter
     def prec(self, num: int) -> float:
         """
         """
-        self.prec = num
+        self._prec = num
 
     def __str__(self) -> str:
         return (
@@ -176,33 +176,33 @@ class PairedVarsADT:
             corr_coeff: Pearson's correlation coefficient, *r*
             prec: precision to return the results
         """
-        self.cov: float = cov
-        self.corr_coeff = corr_coeff
-        self.prec: int = prec
+        self._cov: float = cov
+        self._corr_coeff = corr_coeff
+        self._prec: int = prec
 
     @property
     def cov(self) -> float:
         """
         """
-        return self.cov
+        return self._cov
 
     @property
     def corr_coeff(self) -> float:
         """
         """
-        return self.corr_coeff
+        return self._corr_coeff
 
     @property
     def prec(self) -> float:
         """
         """
-        return self.prec
+        return self._prec
 
     @prec.setter
     def prec(self, num: int) -> float:
         """
         """
-        self.prec = num
+        self._prec = num
 
     def __str__(self) -> str:
         return (
