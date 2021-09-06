@@ -10,8 +10,8 @@ import pandas as pd
 
 class PandasLoader():
     """
-    A helper class to read local csv files saved in a data directory
-    not easily accessible by the cwd, and return it as a Pandas
+    A helper class to read csv files saved in a local data directory
+    not easily accessible from the cwd, and return it as a **Pandas**
     `DataFrame`.
     """
 
@@ -39,14 +39,23 @@ class PandasLoader():
     def get(self, f: str) -> pd.DataFrame:
         """
         Loads a csv file from the receiver's data directory and returns
-        its a Pandas `DataFrame`.
+        its a **Pandas** `DataFrame`.
+
+        There is no need to stipulate `.csv` at the end.
 
         Args:
-            f: file name
+            f: file name (without `.csv`)
+
+        Raises:
+            AssertionError: if arg `f` is not the file name of a csv file \
+                in the data dir
 
         Returns:
-            a Pandas `DataFrame` representation of the csv file.
+            a **Pandas** `DataFrame` representation of the csv file
         """
+        assert f + '.csv' in self.list_files(), (
+            f"{f + '.csv'} is not in the data dir, use list_files() to check"
+            )
         return pd.read_csv(self.PATH + f + '.csv')
 
     def list_files(self) -> list[str]:
