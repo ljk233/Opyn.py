@@ -1,0 +1,24 @@
+site_name: "OpynUni"
+
+theme:
+  name: "material"
+  features:
+    - navigation.sections
+#    - toc.integrate
+
+plugins:
+- search
+- mkdocstrings:
+    default_handler: python
+    handlers:
+      python:
+        rendering:
+          show_source: true
+    watch:
+      - opynuni
+
+markdown_extensions:
+- pymdownx.highlight
+markdown_extensions:
+- toc:
+    permalink: true

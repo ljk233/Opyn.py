@@ -12,7 +12,6 @@ from scipy import stats
 from math import sqrt
 from collections import namedtuple
 import pandas as pd
-import numpy as np
 from numpy.typing import ArrayLike
 
 
@@ -21,11 +20,12 @@ z: stats.rv_continuous = stats.norm
 bern: stats.rv_discrete = stats.bernoulli
 
 
-def statsmodel_to_namedtuple(
+def to_namedtuple(
     res: tuple[float, float], is_type: str, prec: int = 4
 ) -> namedtuple[float, float]:
     """
-    Used for `statsmodels` results, which returns just a tuple.
+    Used for results for `statsmodels` results, which returns just a
+    tuple.
 
     Args:
         res: a tuple of floats
@@ -33,7 +33,7 @@ def statsmodel_to_namedtuple(
         prec: precision to return the results
 
     Returns:
-        tuple from `statsmodels` as a namedtuple
+        tuple from `statsmodels` as a `namedtuple`
 
     Raises:
         AssertionError: arg `is_type` not in `['confint', 'hypothtest']`
@@ -45,10 +45,7 @@ def statsmodel_to_namedtuple(
     else:  # is_type == 'hypothtest':
         nt: namedtuple = namedtuple('Result', ['zstat', 'pval'])
 
-    return nt(
-        round(res[0], prec),
-        round(res[1], prec)
-    )
+    return nt(round(res[0], prec), round(res[1], prec))
 
 
 class ZSample():
@@ -184,7 +181,7 @@ class PairedSamples():
     *Note, it is expected this class will be depreceated in the future.*
     """
 
-    def __init__(self, x: ArrayLike, y: ArrayLike) -> None:
+    def __init__(self, x: ArrayLike[float], y: ArrayLike[float]) -> None:
         """
         Initialises the object.
 
@@ -192,8 +189,8 @@ class PairedSamples():
             x: first sample
             y: seond sample
         """
-        self._x: ArrayLike = x
-        self._y: ArrayLike = y
+        self._x: ArrayLike[float] = x
+        self._y: ArrayLike[float] = y
 
     @property
     def x(self) -> ArrayLike:
@@ -204,39 +201,27 @@ class PairedSamples():
         return self._y
 
     @property
-    def x_bar(self) -> float:
-        return self.x.mean()
-
-    @property
-    def y_bar(self) -> float:
-        return self.y.mean()
-
-    @property
     def size(self) -> float:
         return self.x.size
 
     @property
-    def num(self) -> float:
+    def cov(self) -> float:
         """
         Returns:
-            sum of the product of the residuals
+            Cov(x, y)
         """
-        ndx: int = 0
-        sum: float = 0
-        while ndx < self.size:
-            xres: float = self.x[ndx] - self.x_bar
-            yres: float = self.y[ndx] - self.y_bar
-            sum += (xres * yres)
-            ndx += 1
-        return sum
+        res_x: ArrayLike[float] = self.x - self.x.mean()
+        res_y: ArrayLike[float] = self.y - self.y.mean()
+        num: ArrayLike[float] = (res_x * res_y).sum()
+        return num / (self.size - 1)
 
     @property
-    def denom(self) -> int:
-        return self.size-1
-
-    @property
-    def cov(self) -> float:
-        return self.num / self.denom
+    def corr_coeff(self) -> float:
+        """
+        Returns:
+            Pearson's correlation coefficient, *r*
+        """
+        return self.cov / (self.x.std() * self.y.std())
 
     def from_pandas(df: pd.DataFrame, cols: list[str]) -> PairedSamples:
         """
@@ -266,16 +251,6 @@ class PairedSamples():
             assert a_col in df.columns, f"'{a_col}' is not a column in df"
         assert len(cols) == 2, f"cols {cols} is not a list of two str"
         if cols[0] == cols[1]:
-            print(
-                "Warning: did you mean to pass over the same column title twice?"
-                )
+            print("Warning: passed over the same column title twice")
 
         return PairedSamples(x=df[cols[0]], y=df[cols[1]])
-
-
-# %%
-test = pd.DataFrame(columns=["1", "2", "3"])
-
-PairedSamples.from_pandas(test, ["1", "2"])
-
-# %%

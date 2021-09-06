@@ -44,13 +44,14 @@ def get_cts_points(model: rv_continuous) -> tuple:
     return rng, prob_function
 
 
-def plot_cts(model: rv_continuous) -> None:
+def plot_cts(model: rv_continuous, title: str = "") -> None:
     """
     Plots the probability function of some probability model as a
     lineplot.
 
     Args:
         model: a continuous **SciPy** distribution
+        title: title of the outputted graph
 
     Raises:
         AssertionError: if arg dist is not of type `rv_continuous`
@@ -58,7 +59,7 @@ def plot_cts(model: rv_continuous) -> None:
     pts = get_cts_points(model)
     f, ax = plt.subplots(figsize=(8, 6))
     sns.lineplot(x=pts[0], y=pts[1], lw=2, color="r")
-    ax.set(xlabel="X", ylabel="Pr")
+    ax.set(title=title, xlabel="X", ylabel="Pr")
     plt.show()
 
 
@@ -85,16 +86,17 @@ def get_discrete_points(model: rv_discrete) -> tuple:
     return rng, prob_function
 
 
-def plot_discrete(model: rv_discrete) -> None:
+def plot_discrete(model: rv_discrete, title: str = "") -> None:
     """
     Plots the probability function of some probability model as a
     barplot.
 
     Args:
         model: a discrete **SciPy** distribution
+        title: title of the outputted graph
     """
     pts = get_discrete_points(model)
     f, ax = plt.subplots(figsize=(8, 6))
     sns.barplot(x=pts[0], y=pts[1], color="cornflowerblue")
-    ax.set(xlabel="X", ylabel="Pr")
+    ax.set(title=title, xlabel="X", ylabel="Pr")
     plt.show()
