@@ -11,84 +11,8 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy import stats
-from scipy.stats import rv_discrete, rv_continuous
 from typing import Union
 from numpy.typing import ArrayLike
-
-
-def get_cts_points(model: rv_continuous) -> tuple:
-    """
-    Generates the points that can be used for visualisations of some
-    continuous probability model.
-
-    Args:
-        dist (rv_continuous): A continuous **SciPy** distribution
-
-    Raises:
-        AssertionError: if arg `dist` is not of type `rv_continuous`
-
-    Returns:
-        `x`, `pdf`:
-            tuple of `np.arrays` that can used for plotting
-    """
-    assert getattr(model, "pdf", False), "Not a continuous distribution."
-    rng = np.linspace(model.ppf(0.01), model.ppf(0.99), num=100)
-    prob_function = model.pdf(rng)
-    return rng, prob_function
-
-
-def plot_cts(model: rv_continuous, title: str = "") -> None:
-    """
-    Plots the probability function of some probability model as a
-    lineplot.
-
-    Args:
-        model: a continuous **SciPy** distribution
-        title: title of the outputted graph
-    """
-    pts = get_cts_points(model)
-    f, ax = plt.subplots(figsize=(8, 6))
-    sns.lineplot(x=pts[0], y=pts[1], lw=2, color="r")
-    ax.set(title=title, xlabel="X", ylabel="Pr")
-    plt.show()
-
-
-def get_discrete_points(model: rv_discrete) -> tuple:
-    """
-    Generates the points that can be used for visualisations of some
-    discrete probability model.
-
-    Args:
-        model: a discrete  **SciPy** distribution
-
-    Raises:
-        AssertionError: if arg `dist` is not of type `rv_discrete`
-
-    Returns:
-        `x`, `pmf`:
-            tuple of `np.arrays` that can used for plotting
-    """
-    assert getattr(model, "pmf", False), "Not a discete distribution."
-    rng = np.arange(
-        model.ppf(0.01), model.ppf(0.99)+1, dtype="int32")
-    prob_function = model.pmf(rng)
-    return rng, prob_function
-
-
-def plot_discrete(model: rv_discrete, title: str = "") -> None:
-    """
-    Plots the probability function of some probability model as a
-    barplot.
-
-    Args:
-        model: a discrete **SciPy** distribution
-        title: title of the outputted graph
-    """
-    pts = get_discrete_points(model)
-    f, ax = plt.subplots(figsize=(8, 6))
-    sns.barplot(x=pts[0], y=pts[1], color="cornflowerblue")
-    ax.set(title=title, xlabel="X", ylabel="Pr")
-    plt.show()
 
 
 class ProbModel:
@@ -116,12 +40,12 @@ class ProbModel:
         assert type in ["discrete", "continuous"], (
             f"{type} is not in [\"discrete\", \"continuous\"]"
             )
-        if type == 'continuous':
-            assert getattr(model, "pdf", False), (
-                "`model` is not a continuous distribution from SciPy")
-        else:  # type == 'discrete':
+        if type == 'discrete':
             assert getattr(model, "pmf", False), (
                 "`model` is not a discrete distribution from SciPy")
+        else:
+            assert getattr(model, "pdf", False), (
+                "`model` is not a continuous distribution from SciPy")
         self.model: Union[stats.rv_discrete, stats.rv_continuous] = model
         self.type: str = type
 
@@ -129,9 +53,9 @@ class ProbModel:
     def rng(self) -> ArrayLike[float]:
         """
         """
-        if self.type == 'discrete':
+        if self.is_discrete():
             return np.arange(self.model.ppf(0.01), self.model.ppf(0.99)+1)
-        else:  # type == 'continuous'
+        else:
             return (
                 np.linspace(
                     self.model.ppf(0.01), self.model.ppf(0.99), num=100
@@ -142,10 +66,17 @@ class ProbModel:
     def prob_func(self) -> ArrayLike[float]:
         """
         """
-        if self.type == 'discrete':
+        if self.is_discrete():
             return self.model.pmf(self.rng)
-        else:  # type == 'continuous'
+        else:
             return self.model.pdf(self.rng)
+
+    def is_discrete(self) -> bool:
+        """
+        Returns:
+            `True` if receiver's `type` is `'discrete'`, otherwise `False`
+        """
+        return self.type == 'discrete'
 
     def plot(self, title: str = "") -> None:
         """
@@ -155,9 +86,11 @@ class ProbModel:
             title: title of the outputted graph
         """
         f, ax = plt.subplots(figsize=(8, 6))
-        if self.type == 'discrete':
+        if self.is_discrete():
+            ylab: str = 'p(x)'
             sns.barplot(x=self.rng, y=self.prob_func, color="cornflowerblue")
-        else:  # type == 'continuous'
+        else:
+            ylab: str = 'f(x)'
             sns.lineplot(x=self.rng, y=self.prob_func, lw=2, color="r")
-        ax.set(title=title, xlabel="X", ylabel="Pr")
+        ax.set(title=title, xlabel="x", ylabel=ylab)
         plt.show()
