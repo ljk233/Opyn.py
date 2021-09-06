@@ -8,6 +8,7 @@ TODO: Add module sting
 
 # %%
 from __future__ import annotations
+from . import adt
 from scipy import stats
 from math import sqrt
 from collections import namedtuple
@@ -92,9 +93,7 @@ class ZSample():
         """
         return self._nobs
 
-    def zconfint_mean(
-        self, a: float = 0.05, prec: int = 4
-    ) -> namedtuple[float, float]:
+    def zconfint_mean(self, a: float = 0.05, prec: int = 4) -> adt.ConfIntADT:
         """
         Two-sided approximate confidence interval for the sample.
 
@@ -103,20 +102,15 @@ class ZSample():
             prec: Precision of the returned boundaries
 
         Returns:
-            Lower and upper boundaries of confidence interval
+            datacass representation of the confidence interval
         """
         zval: float = z.ppf(1-a/2)
-        res: namedtuple = namedtuple(
-                                            'zconfint', ['lower', 'upper']
-                                        )
-        return res(
-            round(self.mean - zval*self.ste_mean, prec),
-            round(self.mean + zval*self.ste_mean, prec)
-            )
+        res = self.mean - zval*self.ste_mean, self.mean + zval*self.ste_mean
+        return adt.ConfIntADT(res, prec)
 
     def twosided_ztest_mean(
         self, mu0: float = 0.0, prec: int = 4
-    ) -> namedtuple[float, float]:
+    ) -> adt.ZTestADT:
         """
         Returns the results of a two-sided **z**-test of the null
         hypothesis that the mean is equal to `mu0`.
@@ -126,16 +120,16 @@ class ZSample():
             prec: precision of the returned results
 
         Returns:
-            **zstat, pval**:
-                z statistic and p-value
+            dataclass representation of the results of the two-sided \
+                **z**-test
         """
         zstat: float = (self.mean - mu0) / self.ste_mean
         if zstat <= 0:
             pval: float = z.cdf(x=zstat)
         else:
             pval: float = z.sf(x=zstat)
-        res: namedtuple = namedtuple('Result', ['zstat', 'pval'])
-        return res(round(zstat, prec), round(2*pval, prec))
+        res = zstat, 2*pval
+        return adt.ZTestADT(res, prec)
 
     def onesided_ztest_mean(
         self, alternative: str, mu0: float = 0.0, prec: int = 4
@@ -173,12 +167,14 @@ class ZSample():
 # %%
 class PairedSamples():
     """
+    *class* `opynuni.stats.sampling.PairedSamples`
+
     A simple class to model paired continuous random variables as
     and object.
     It is a simple implementation to calculate the covariance and
     Pearson's correlation coefficient.
 
-    *Note, it is expected this class will be depreceated in the future.*
+    *Note, it is expected this class will be deprecated in the future.*
     """
 
     def __init__(self, x: ArrayLike[float], y: ArrayLike[float]) -> None:
@@ -193,22 +189,26 @@ class PairedSamples():
         self._y: ArrayLike[float] = y
 
     @property
-    def x(self) -> ArrayLike:
+    def x(self) -> ArrayLike[float]:
+        """
+        """
         return self._x
 
     @property
-    def y(self) -> ArrayLike:
+    def y(self) -> ArrayLike[float]:
+        """
+        """
         return self._y
 
     @property
     def size(self) -> float:
+        """
+        """
         return self.x.size
 
     @property
     def cov(self) -> float:
         """
-        Returns:
-            Cov(x, y)
         """
         res_x: ArrayLike[float] = self.x - self.x.mean()
         res_y: ArrayLike[float] = self.y - self.y.mean()
@@ -218,8 +218,6 @@ class PairedSamples():
     @property
     def corr_coeff(self) -> float:
         """
-        Returns:
-            Pearson's correlation coefficient, *r*
         """
         return self.cov / (self.x.std() * self.y.std())
 
