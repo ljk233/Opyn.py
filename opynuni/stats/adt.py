@@ -4,9 +4,65 @@ A collection of abstract data types to represent various data descriptions.
 """
 
 
-class ConfInt:
+from __future__ import annotations
+
+
+class ZTestADT:
     """
-    A confidence interval with lower and upper boundaries
+    *class* `opynuni.stats.adt.ZTestRepr`
+
+    A dataclass to represent the results of a z-test
+    """
+
+    def __init__(self, res: tuple[float], prec: int = 4) -> None:
+        """
+        Args:
+            res: a tuple of floats
+            prec: precision to return the results
+        """
+        self.zstat: float = res[0]
+        self.pval: float = res[1]
+        self.prec: int = prec
+
+    @property
+    def zstat(self) -> float:
+        """
+        """
+        return self.zstat
+
+    @property
+    def pval(self) -> float:
+        """
+        """
+        return self.pval
+
+    @property
+    def prec(self) -> float:
+        """
+        """
+        return self.prec
+
+    @prec.setter
+    def prec(self, num: int) -> float:
+        """
+        """
+        self.prec = num
+
+    def __str__(self) -> str:
+        return (
+            f"zstat={round(self.zstat, self.prec)}, "
+            f"pval={round(self.pval, self.prec)}"
+            )
+
+    def __repr__(self) -> str:
+        return f"results({self})"
+
+
+class ConfIntADT:
+    """
+    *class* `opynuni.stats.adt.ZTestRepr`
+
+    A class to represent any confidence interval.
     """
 
     def __init__(self, res: tuple[float], prec: int = 4) -> None:
@@ -19,6 +75,30 @@ class ConfInt:
         self.upper: float = res[1]
         self.prec: int = prec
 
+    @property
+    def lower(self) -> float:
+        """
+        """
+        return self.lower
+
+    @property
+    def upper(self) -> float:
+        """
+        """
+        return self.upper
+
+    @property
+    def prec(self) -> float:
+        """
+        """
+        return self.prec
+
+    @prec.setter
+    def prec(self, num: int) -> float:
+        """
+        """
+        self.prec = num
+
     def __str__(self) -> str:
         return (
             f"lower={round(self.lower, self.prec)}, "
@@ -29,9 +109,9 @@ class ConfInt:
         return f"confint({self})"
 
 
-class NormRepr:
+class NormADT:
     """
-    A normal distribution with mean and var
+    A class to represent a normal distribution.
     """
 
     def __init__(
@@ -41,11 +121,35 @@ class NormRepr:
         Args:
             mean: mean of normal dist
             var: variance of normal dist
-            prec: prec: precision to return the results
+            prec: precision to return the results
         """
         self.mean: float = mean
         self.var = var
         self.prec: int = prec
+
+    @property
+    def mean(self) -> float:
+        """
+        """
+        return self.mean
+
+    @property
+    def var(self) -> float:
+        """
+        """
+        return self.var
+
+    @property
+    def prec(self) -> float:
+        """
+        """
+        return self.prec
+
+    @prec.setter
+    def prec(self, num: int) -> float:
+        """
+        """
+        self.prec = num
 
     def __str__(self) -> str:
         return (
@@ -57,13 +161,10 @@ class NormRepr:
         return f"N({self})"
 
 
-class PairedVarsRepr:
+class PairedVarsADT:
     """
-    Description of paried variables.
-
+    A class to represent paried variables.
     Currently returns:
-    - Covariance
-    - Correlation coefficient
     """
 
     def __init__(
@@ -73,11 +174,35 @@ class PairedVarsRepr:
         Args:
             cov: Cov(x, y)
             corr_coeff: Pearson's correlation coefficient, *r*
-            prec: prec: precision to return the results
+            prec: precision to return the results
         """
         self.cov: float = cov
         self.corr_coeff = corr_coeff
         self.prec: int = prec
+
+    @property
+    def cov(self) -> float:
+        """
+        """
+        return self.cov
+
+    @property
+    def corr_coeff(self) -> float:
+        """
+        """
+        return self.corr_coeff
+
+    @property
+    def prec(self) -> float:
+        """
+        """
+        return self.prec
+
+    @prec.setter
+    def prec(self, num: int) -> float:
+        """
+        """
+        self.prec = num
 
     def __str__(self) -> str:
         return (
