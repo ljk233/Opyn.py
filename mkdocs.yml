@@ -1,4 +1,4 @@
-site_name: "OpynUni"
+site_name: "opyn"
 
 theme:
   name: "material"
@@ -15,7 +15,7 @@ plugins:
         rendering:
           show_source: true
     watch:
-      - opynuni
+      - opyn
 
 markdown_extensions:
 - pymdownx.highlight

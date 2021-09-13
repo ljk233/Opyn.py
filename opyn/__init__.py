@@ -1,4 +1,4 @@
-"""Top-level package for opynuni."""
+"""Top-level package for opyn."""
 
 __author__ = """Liam Kelly"""
 __email__ = ''

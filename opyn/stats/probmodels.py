@@ -1,6 +1,6 @@
 
 """
-`opynuni.stats.probmodels`
+`opyn.stats.probmodels`
 
 TODO: Add module sting
 """

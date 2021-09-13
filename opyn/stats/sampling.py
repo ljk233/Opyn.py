@@ -1,6 +1,6 @@
 
 """
-`opynuni.stats.sampling`
+`opyn.stats.sampling`
 
 TODO: Add module sting
 """
@@ -51,7 +51,7 @@ def to_namedtuple(
 
 class ZSample():
     """
-    *class* `opynuni.stats.sampling.ZSample`
+    *class* `opyn.stats.sampling.ZSample`
 
     A class designed to model questions where we are given the sample
     mean, standard deviation, and number of observations from some
@@ -167,7 +167,7 @@ class ZSample():
 # %%
 class PairedSamples():
     """
-    *class* `opynuni.stats.sampling.PairedSamples`
+    *class* `opyn.stats.sampling.PairedSamples`
 
     A simple class to model paired continuous random variables as
     and object.
