@@ -1,148 +1,10 @@
 
-"""
-A collection of abstract data types to represent various data descriptions.
+"""A collection of dataclasses to represent various descriptions of results.
 """
 
 # %%
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Any
-
-
-class _GenericADT:
-    """
-    A helper class that handles the __repr__ and __str__ methods, and the
-    prec
-    """
-
-    def __init__(self, prec: int, **kwargs) -> None:
-        """
-        Args:
-            prec: precision to return the results
-        """
-        self._prec: int = prec
-        self._params: dict[str, Any] = {}
-        for key, value in kwargs.items():
-            self._params[key] = value
-
-    @property
-    def prec(self) -> float:
-        """
-        """
-        return self._prec
-
-    @prec.setter
-    def prec(self, num: int) -> None:
-        """
-        """
-        self._prec = num
-
-    def __str__(self) -> str:
-        _str: str = ""
-        for k, v in self._params.items():
-            if k == 'name':
-                pass
-            elif _str == '':
-                _str = f"{k}={round(v, self.prec)}"
-            else:
-                _str += f", {k}={round(v, self.prec)}"
-        return _str
-
-    def __repr__(self) -> str:
-        return f"{self._params['name']}({self})"
-
-
-class ZTestADT(_GenericADT):
-    """
-    A class to represent the results of a z-test
-    """
-
-    def __init__(self, res: tuple[float], prec: int = 4) -> None:
-        """
-        Args:
-            res: a tuple of floats
-            prec: precision to return the results
-        """
-        super().__init__(prec, name='hypothtest', zstat=res[0], pval=res[1])
-        self._zstat: float = res[0]
-        self._pval: float = res[1]
-
-    @property
-    def zstat(self) -> float:
-        """
-        """
-        return self._zstat
-
-    @property
-    def pval(self) -> float:
-        """
-        """
-        return self._pval
-
-
-class NormADT(_GenericADT):
-    """
-    A class to represent a normal distribution.
-    """
-
-    def __init__(
-        self, mean: float, var: float, prec: int = 4
-    ) -> None:
-        """
-        Args:
-            mean: mean of normal dist
-            var: variance of normal dist
-            prec: precision to return the results
-        """
-        super().__init__(prec, name='N', mean=mean, var=var)
-        self._mean: float = mean
-        self._var = var
-
-    @property
-    def mean(self) -> float:
-        """
-        """
-        return self._mean
-
-    @property
-    def var(self) -> float:
-        """
-        """
-        return self._var
-
-
-class PairedVarsADT(_GenericADT):
-    """
-    A class to represent paried variables.
-    Currently returns:
-    """
-
-    def __init__(
-        self, cov: float, corr_coeff: float, prec: int = 4
-    ) -> None:
-        """
-        Args:
-            cov: Cov(x, y)
-            corr_coeff: Pearson's correlation coefficient, *r*
-            prec: precision to return the results
-        """
-        super().__init__(
-            prec, name='pairedvars', cov=cov, corr_coeff=corr_coeff
-            )
-        self._cov: float = cov
-        self._corr_coeff = corr_coeff
-
-    @property
-    def cov(self) -> float:
-        """
-        """
-        return self._cov
-
-    @property
-    def corr_coeff(self) -> float:
-        """
-        """
-        return self._corr_coeff
 
 
 @dataclass
@@ -190,8 +52,8 @@ class ChiSqTest():
 
 
 @dataclass
-class ConfInt:
-    """Models a confidence interval.
+class ZConfInt:
+    """Models an approximate **z**-interval.
     """
 
     _lower: float = 0.0
@@ -208,6 +70,22 @@ class ConfInt:
         """
         """
         return float(self._upper)
+
+    def __str__(self) -> str:
+        """Return a string representation of the object.
+        """
+        return(
+            f"lower={self.lower:.6f}, upper={self.upper:.6f}"
+        )
+
+    def __repr__(self) -> str:
+        """Return a string representation of the object.
+
+        Same as the `str` representation, but includes the class name.
+        """
+        return(
+            f"zconfint({self})"
+        )
 
 
 @dataclass
@@ -297,46 +175,44 @@ class OddsRatio:
 
 
 @dataclass
-class OddsDiseaseExposure:
+class ConditionalOdds:
     """Models the odds of disease given exposure in a cohort and case-control
     study.
     """
 
-    _d_given_e: float = 0.0
-    _d_given_not_e: float = 0.0
-    _e_given_d: float = 0.0
-    _e_given_not_d: float = 0.0
+    _a_given_b: float = 0.0
+    _a_given_not_b: float = 0.0
 
     @property
     def disease_exposed(self) -> float:
         """
         """
-        return float(self._d_given_e)
+        return float(self._a_given_b)
 
     @property
     def disease_not_exposed(self) -> float:
         """
         """
-        return float(self._d_given_not_e)
+        return float(self._a_given_not_b)
 
     @property
     def exposed_disease(self) -> float:
         """
         """
-        return float(self._d_given_e)
+        return float(self._a_given_b)
 
     @property
     def exposed_no_disease(self) -> float:
         """
         """
-        return float(self._d_given_not_e)
+        return float(self._a_given_not_b)
 
     def __str__(self) -> str:
         """Return a string representation of the object.
         """
         return(
-            f"OD(D|E)={self.disease_exposed:.6f}"
-            f", OD(D|Not E)={self.disease_not_exposed:.6f}"
+            f"OD(A|B)={self.disease_exposed:.6f}"
+            f", OD(A|NotB)={self.disease_not_exposed:.6f}"
         )
 
     def __repr__(self) -> str:
@@ -345,5 +221,119 @@ class OddsDiseaseExposure:
         Same as the `str` representation, but includes the class name.
         """
         return(
-            f"OddsDiseaseExposure({self})"
+            f"ConditionalOdds({self})"
+        )
+
+
+@dataclass
+class Normal:
+    """Models a normal distribution.
+    """
+
+    _mean: float
+    _var: float
+
+    @property
+    def mean(self) -> float:
+        """
+        """
+        return float(self._mean)
+
+    @property
+    def var(self) -> float:
+        """
+        """
+        return float(self._var)
+
+    def __str__(self) -> str:
+        """Return a string representation of the object.
+        """
+        return(
+            f"mean={self.mean:.6f}"
+            f", var={self.var:.6f}"
+        )
+
+    def __repr__(self) -> str:
+        """Return a string representation of the object.
+
+        Same as the `str` representation, but includes the class name.
+        """
+        return(
+            f"Normal({self})"
+        )
+
+
+@dataclass
+class ZTest:
+    """Models the results of a z-test.
+    """
+
+    _zstat: float
+    _pval: float
+
+    @property
+    def zstat(self) -> float:
+        """
+        """
+        return self._zstat
+
+    @property
+    def pval(self) -> float:
+        """
+        """
+        return self._pval
+
+    def __str__(self) -> str:
+        """Return a string representation of the object.
+        """
+        return(
+            f"zstat={self.zstat:.6f}"
+            f", pval={self.pval:.6f}"
+        )
+
+    def __repr__(self) -> str:
+        """Return a string representation of the object.
+
+        Same as the `str` representation, but includes the class name.
+        """
+        return(
+            f"ztest({self})"
+        )
+
+
+@dataclass
+class PairedVars:
+    """Models the relationship between paired continuous variables.
+    """
+
+    _cov: float
+    _r: float
+
+    @property
+    def cov(self) -> float:
+        """
+        """
+        return self._cov
+
+    @property
+    def r(self) -> float:
+        """
+        """
+        return self._corr_coeff
+
+    def __str__(self) -> str:
+        """Return a string representation of the object.
+        """
+        return(
+            f"cov={self.cov:.6f}"
+            f", r={self.r:.6f}"
+        )
+
+    def __repr__(self) -> str:
+        """Return a string representation of the object.
+
+        Same as the `str` representation, but includes the class name.
+        """
+        return(
+            f"pairedvars({self})"
         )
