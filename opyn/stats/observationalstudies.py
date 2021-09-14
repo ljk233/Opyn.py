@@ -1,21 +1,45 @@
 
-"""A module to help perform analyses on cohort and case-control studies.
+"""A module to help perform analyses on various observatioanl studies.
+
+This module was implemented following studies of M249, Book 1.
+Currently only case-control studies and cohort studies are supported.
+
+Classes:
+    `ExposureControl`:
+        Models an observational study with two exposures.
+    `ThreeExposures`:
+        Models an observational study with three exposure cateogries.
+
+Dependencies:
+    `scipy`
+    `statsmodels`
+    `pandas`
+    `numpy`
+
+Exceptions:
+    `TypeError`:
+        A Non-ArrayLike data structure has been passed as an actual argument
+        to `ExposureControl`.
+
+Examples to be provided.
 """
 
 
 from __future__ import annotations
 from scipy import stats
 from statsmodels.stats import contingency_tables
-from . import adt
+from . import dataclasses
 import pandas as pd
 import numpy as np
 from numpy.typing import ArrayLike
 from typing import Union
 
 
-class ContingencyTable:
-    """A composite class to model a cohort or case-control study, as outlined
-       by **M249.**
+class ExposureControl:
+    """Models an observational study with two exposures.
+
+    It has a composite relationship with `statsmodels` `Table2x2` class,
+    where an `ExposureControl` *has-a* `Table2x2`.
     """
 
     def __init__(self, obs: ArrayLike) -> None:
@@ -23,7 +47,8 @@ class ContingencyTable:
 
         Args:
             obs: some data structure representing the data.\
-                Do not include any marginal totals.
+                Do not include marginal totals.\
+                Example data structure: `[[1, 5], [10, 15]]`
         """
         self._obs: np.ndarray = np.array(obs)
         self._table2x2: contingency_tables.Table2x2 = (
@@ -64,9 +89,11 @@ class ContingencyTable:
         """
         return self._table2x2
 
-    def relative_risk(self, alpha: float = 0.05) -> adt.RelativeRisk:
-        """Return the point and (1-alpha)% confidence interval for the relative
-        risk.
+    def relative_risk(
+        self, alpha: float = 0.05
+    ) -> dataclasses.RelativeRisk:
+        """Return the point and (1-alpha)% confidence interval estimates for
+        the relative risk.
 
         Args:
             alpha: Significance level for the confidence interval.
@@ -75,11 +102,12 @@ class ContingencyTable:
             Initialised object of type `RelativeRisk`.
         """
         res = self.table2x2.riskratio_confint(alpha)
-        return adt.RelativeRisk(self.table2x2.riskratio, res[0], res[1])
+        return (
+            dataclasses.RelativeRisk(self.table2x2.riskratio, res[0], res[1]))
 
-    def odds_ratio(self, alpha: float = 0.05) -> adt.OddsRatio:
-        """Return the point and (1-alpha)% confidence interval for the odds
-        ratio.
+    def odds_ratio(self, alpha: float = 0.05) -> dataclasses.OddsRatio:
+        """Return the point and (1-alpha)% confidence interval estimates for
+        the odds ratio.
 
         Args:
             alpha: Significance level for the confidence interval.
@@ -88,25 +116,38 @@ class ContingencyTable:
             Initialised object of type `OddsRatio`.
         """
         res = self.table2x2.oddsratio_confint(alpha)
-        return adt.OddsRatio(self.table2x2.oddsratio, res[0], res[1])
+        return dataclasses.OddsRatio(self.table2x2.oddsratio, res[0], res[1])
 
-    def conditional_odds(self) -> adt.OddsDiseaseExposure:
-        """Returns the odds of disease given exposure, and disease given no
-        exposure.
+    def conditional_odds(
+        self, is_cohort: bool = True
+    ) -> dataclasses.ConditionalOdds:
+        """Returns the conditonal odds associated with a study.
+
+        Note, that from cohort studies, the odds of **OD(D|E),
+        OD(D|Not E),** are used. For case-control studies they are
+        **OD(E|D), OD(E|Not D).**
+
+        Args:
+            `is_cohort`: If `True`, return the **OD(D|E), OD(D|Not E).**\
+                Otherwise, return **OD(E|D), OD(E|Not D).**
 
         Returns:
-            Initialised instance of `OddsDiseaseExposure`.
+            Initialised instance of `CondtionalOdds`.
         """
         # elements in the table
         a = self._obs[0][0]
         b = self._obs[0][1]
         c = self._obs[1][0]
         d = self._obs[1][1]
-        # calculate odds
-        de: float = a / b
-        dne: float = c / d
 
-        return adt.OddsDiseaseExposure(de, dne)
+        if is_cohort:
+            ab: float = a / b
+            anb: float = c / d
+        else:
+            ab: float = a / c
+            anb: float = b / d
+
+        return dataclasses.ConditionalOdds(ab, anb)
 
     def expected_freq(
         self, incl_row_totals: bool = False, incl_col_totals: bool = False
@@ -114,10 +155,10 @@ class ContingencyTable:
         """Return the expected frequencies from a contingency table.
 
         Args:
-            incl_row_totals: If True, then include the row marginal totals in\
-                the DataFrame. Otherwise, do not include them.
-            incl_col_totals: If True, then include the column marginal totals\
-                in the the DataFrame. Otherwise, do not include them.
+            `incl_row_totals`: If `True`, then include the row marginal totals\
+                in the `DataFrame`. Otherwise, do not include them.
+            `incl_col_totals`: If `True`, then include the column marginal\
+                totals in the the `DataFrame`. Otherwise, do not include them.
 
         Returns:
             A **Pandas** `DataFrame` representation of the expected\
@@ -125,7 +166,7 @@ class ContingencyTable:
         """
         res = stats.contingency.expected_freq(self._obs)
         return (
-            nparray_to_pandas(
+            _nparray_to_pandas(
                 res,
                 self,
                 include_row_totals=incl_row_totals,
@@ -142,7 +183,7 @@ class ContingencyTable:
         """
         res = self.table2x2.chi2_contribs
         return (
-            nparray_to_pandas(
+            _nparray_to_pandas(
                 res,
                 self,
                 include_row_totals=False,
@@ -150,14 +191,14 @@ class ContingencyTable:
             )
         )
 
-    def chi2_test(self) -> adt.ChiSqTest:
+    def chi2_test(self) -> dataclasses.ChiSqTest:
         """Return the results of a chi-squared test of no association.
 
         Returns:
             An initialised dataclass object of type `ChiSqTest`.
         """
         res = stats.chi2_contingency(self._obs, correction=False)
-        return adt.ChiSqTest(res[0], res[1], res[2])
+        return dataclasses.ChiSqTest(res[0], res[1], res[2])
 
     def show_table(
         self, incl_row_totals: bool = False, incl_col_totals: bool = False
@@ -165,16 +206,17 @@ class ContingencyTable:
         """Return the object observations as a DataFrame.
 
         Args:
-            incl_row_totals: If True, then include the row marginal totals in\
-                the DataFrame. Otherwise, do not include them.
-            incl_col_totals: If True, then include the column marginal totals\
-                in the the DataFrame. Otherwise, do not include them.
+            `incl_row_totals`: If `True`, then include the row marginal totals\
+                in the `DataFrame`. Otherwise, do not include them.
+            `incl_col_totals`: If `True`, then include the column marginal\
+                totals in the the `DataFrame`. Otherwise, do not include them.
 
         Returns:
-            Add desc
+            A **Pandas** `DataFrame` representation of the the contingency\
+                table.
         """
         return (
-            nparray_to_pandas(
+            _nparray_to_pandas(
                 self._obs,
                 self,
                 include_row_totals=incl_row_totals,
@@ -182,17 +224,20 @@ class ContingencyTable:
         )
 
 
-class MultipleExposures:
-    """
+class ThreeExposures:
+    """Models an observational study where there are three exposures.
+
+    It has a composite relationship with `statsmodels` `Table2x2` class,
+    where an `ThreeExposures` *has-a* `ExposureControl`.
     """
 
     def __init__(
         self, exposure1: list[int], exposure2: list[int], reference: list[int]
     ) -> None:
-        self.table1: ContingencyTable = (
-            ContingencyTable([exposure1, reference]))
-        self.table2: ContingencyTable = (
-            ContingencyTable([exposure2, reference]))
+        self.table1: ExposureControl = (
+            ExposureControl([exposure1, reference]))
+        self.table2: ExposureControl = (
+            ExposureControl([exposure2, reference]))
         self._obs: np.ndarray = (
             np.array([exposure1, exposure2, reference]))
 
@@ -268,7 +313,7 @@ class MultipleExposures:
         """
         res = stats.contingency.expected_freq(self._obs)
         return (
-            nparray_to_pandas(
+            _nparray_to_pandas(
                 res,
                 self,
                 include_row_totals=incl_row_totals,
@@ -286,7 +331,7 @@ class MultipleExposures:
         exp: np.ndarray = stats.contingency.expected_freq(self._obs)
         res: np.ndarray = np.square(self._obs - exp) / exp
         return (
-            nparray_to_pandas(
+            _nparray_to_pandas(
                 res,
                 self,
                 include_row_totals=False,
@@ -294,14 +339,14 @@ class MultipleExposures:
             )
         )
 
-    def chi2_test(self) -> adt.ChiSqTest:
+    def chi2_test(self) -> dataclasses.ChiSqTest:
         """Return the results of a chi-squared test of no association.
 
         Returns:
             An initialised dataclass object of type `ChiSqTest`.
         """
         res = stats.chi2_contingency(self._obs, correction=False)
-        return adt.ChiSqTest(res[0], res[1], res[2])
+        return dataclasses.ChiSqTest(res[0], res[1], res[2])
 
     def show_table(
         self, incl_row_totals: bool = False, incl_col_totals: bool = False
@@ -318,7 +363,7 @@ class MultipleExposures:
             Add desc
         """
         return (
-            nparray_to_pandas(
+            _nparray_to_pandas(
                 self._obs,
                 self,
                 include_row_totals=incl_row_totals,
@@ -326,11 +371,11 @@ class MultipleExposures:
         )
 
 
-def nparray_to_pandas(
-    array: np.ndarray, obj: Union(ContingencyTable, MultipleExposures),
+def _nparray_to_pandas(
+    array: np.ndarray, obj: Union(ExposureControl, ThreeExposures),
     include_row_totals: bool = False, include_col_totals: bool = True
 ) -> pd.DataFrame:
-    """
+    """Helper function.
     Return a **numpy** array as a **pandas** DataFrame.
 
     Args:
