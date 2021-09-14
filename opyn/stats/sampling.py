@@ -8,7 +8,7 @@ TODO: Add module sting
 
 # %%
 from __future__ import annotations
-from . import adt
+from . import dataclasses
 from scipy import stats
 from math import sqrt
 from collections import namedtuple
@@ -50,12 +50,10 @@ def to_namedtuple(
 
 
 class ZSample():
-    """
-    *class* `opyn.stats.sampling.ZSample`
+    """Models a one or two sample **z**-test.
 
-    A class designed to model questions where we are given the sample
-    mean, standard deviation, and number of observations from some
-    population.
+    Implemented to support scenarios where the sample mean, standard deviation,
+    and number of observations from some population are iven, rather the data.
     """
 
     def __init__(self, mean: float, std: float, nobs: int) -> None:
@@ -93,7 +91,9 @@ class ZSample():
         """
         return self._nobs
 
-    def zconfint_mean(self, a: float = 0.05, prec: int = 4) -> adt.ConfIntADT:
+    def zconfint_mean(
+        self, a: float = 0.05, prec: int = 4
+    ) -> dataclasses.ZConfInt:
         """
         Two-sided approximate confidence interval for the sample.
 
@@ -106,11 +106,11 @@ class ZSample():
         """
         zval: float = z.ppf(1-a/2)
         res = self.mean - zval*self.ste_mean, self.mean + zval*self.ste_mean
-        return adt.ConfIntADT(res, prec)
+        return dataclasses.ZConfInt(res[0], res[1])
 
     def twosided_ztest_mean(
         self, mu0: float = 0.0, prec: int = 4
-    ) -> adt.ZTestADT:
+    ) -> dataclasses.ZTest:
         """
         Returns the results of a two-sided **z**-test of the null
         hypothesis that the mean is equal to `mu0`.
@@ -129,11 +129,11 @@ class ZSample():
         else:
             pval: float = z.sf(x=zstat)
         res = zstat, 2*pval
-        return adt.ZTestADT(res, prec)
+        return dataclasses.ZTest(res[0], res[1])
 
     def onesided_ztest_mean(
         self, alternative: str, mu0: float = 0.0, prec: int = 4
-    ) -> namedtuple[float, float]:
+    ) -> dataclasses.ZTest:
         """
         Returns the results of a one-sided **z**-test of the null
         hypothesis that the mean is equal to `mu0`.
@@ -155,13 +155,13 @@ class ZSample():
         assert alternative in ['larger', 'smaller'], (
             f"{alternative} not one of [larger, smaller]"
         )
-        zstat: float = (self.mean - mu0) / self.ste
+        zstat: float = (self.mean - mu0) / self.ste_mean
         if alternative == 'larger':
             pval: float = z.sf(x=zstat)
         else:
             pval: float = z.cdf(x=zstat)
-        res: namedtuple = namedtuple('Res', ['zstat', 'pval'])
-        return res(round(zstat, prec), round(pval, prec))
+        res = zstat, pval
+        return dataclasses.ZTest(res[0], res[1])
 
 
 # %%
