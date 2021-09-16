@@ -5,23 +5,19 @@ This module was implemented following studies of M249, Book 1.
 Currently only case-control studies and cohort studies are supported.
 
 Classes:
-    `ExposureControl`:
+    - **ExposureControl**:
         Models an observational study with two exposures.
-    `ThreeExposures`:
+    - **ThreeExposures**:
         Models an observational study with three exposure cateogries.
 
 Dependencies:
-    `scipy`
-    `statsmodels`
-    `pandas`
-    `numpy`
+    - **scipy**
+    - **statsmodels**
+    - **pandas**
+    - **numpy**
 
-Exceptions:
-    `TypeError`:
-        A Non-ArrayLike data structure has been passed as an actual argument
-        to `ExposureControl`.
-
-Examples to be provided.
+Examples:
+    - To be added.
 """
 
 
@@ -38,8 +34,45 @@ from typing import Union
 class ExposureControl:
     """Models an observational study with two exposures.
 
-    It has a composite relationship with `statsmodels` `Table2x2` class,
-    where an `ExposureControl` *has-a* `Table2x2`.
+    It has a composite relationship with `Table2x2` class from
+    `statsmodels`, such that an `ExposureControl` *has-a* `Table2x2`.
+
+    Parameters:
+        obs (ArrayLike): Observations from the study. It is expected that\
+            the data structure can be cast to a **numpy** `ndarray`.\
+            See **[https://bit.ly/3kdQ7zg](statsmodels)** for examples.
+
+    Attributes:
+        col_labels (list[str]): Column labels to be used in a `DataFrame`.\
+            Default is `["Disease", "No Disease"]`.
+        obs (np.ndarray): Results of the study.
+        row_labels (list[str]): Column labels to be used in a `DataFrame`.\
+            Default is `["Exposed", "Not Exposed"]`.
+        table2x2 (Table2x2): Initialised instance of **statsmodels**\
+            `Table2x2` used for modelling the analysis.
+
+    Warning:
+        There is no type checking on **col_labels** and **row_label**.
+
+    Methods:
+        - **conditional odds**
+            - Returns the conditonal odds associated with a study.
+        - **expected_freq**
+            - Return the expected frequencies from a contingency table under
+            the hypothesis of no association.
+        - **chi2_contribs**
+            - Return the chi-squared contributions for each observation used
+            in a chi-squared test of no association.
+        - **chi2_test**
+            - Return the results of a chi-squared test of no association.
+        - **odds_ratio**
+            - Return the point and (1-alpha)% confidence interval estimates
+            for the odds ratio.
+        - **relative_risk**
+            - Return the point and (1-alpha)% confidence interval estimates
+            for the relative risk.
+        - **show_table**
+            - Return a contingency table of the study.
     """
 
     def __init__(self, obs: ArrayLike) -> None:
@@ -50,44 +83,12 @@ class ExposureControl:
                 Do not include marginal totals.\
                 Example data structure: `[[1, 5], [10, 15]]`
         """
-        self._obs: np.ndarray = np.array(obs)
-        self._table2x2: contingency_tables.Table2x2 = (
-            contingency_tables.Table2x2(self._obs)
+        self.obs: np.ndarray = np.array(obs)
+        self.table2x2: contingency_tables.Table2x2 = (
+            contingency_tables.Table2x2(self.obs)
         )
-        self._row_labels: list[str] = ["Exposed", "Not Exposed"]
-        self._col_labels: list[str] = ["Disease", "No Disease"]
-
-    @property
-    def row_labels(self) -> list[str]:
-        """Return the object's row labels that will be included in a DataFrame.
-        """
-        return self._row_labels
-
-    @row_labels.setter
-    def row_labels(self, labels: list[str]) -> None:
-        """Set the object's row labels that will be included in a DataFrame.
-        """
-        self._row_labels = labels
-
-    @property
-    def col_labels(self) -> list[str]:
-        """Return the object's column labels that will be included in a
-        DataFrame.
-        """
-        return self._col_labels
-
-    @col_labels.setter
-    def col_labels(self, labels: list[str]) -> None:
-        """Set the object's column labels that will be included in a
-        DataFrame.
-        """
-        self._col_labels = labels
-
-    @property
-    def table2x2(self) -> contingency_tables.Table2x2:
-        """Return the receiver's instance of type `Table2x2`.
-        """
-        return self._table2x2
+        self.row_labels: list[str] = ["Exposed", "Not Exposed"]
+        self.col_labels: list[str] = ["Disease", "No Disease"]
 
     def relative_risk(
         self, alpha: float = 0.05
@@ -99,7 +100,8 @@ class ExposureControl:
             alpha: Significance level for the confidence interval.
 
         Returns:
-            Initialised object of type `RelativeRisk`.
+            Point and (1-alpha)% confidence interval estimates for\
+            the relative risk.
         """
         res = self.table2x2.riskratio_confint(alpha)
         return (
@@ -113,32 +115,28 @@ class ExposureControl:
             alpha: Significance level for the confidence interval.
 
         Returns:
-            Initialised object of type `OddsRatio`.
+            Point and (1-alpha)% confidence interval estimates for\
+            the odds ratio.
         """
         res = self.table2x2.oddsratio_confint(alpha)
         return dataclasses.OddsRatio(self.table2x2.oddsratio, res[0], res[1])
 
-    def conditional_odds(
-        self, is_cohort: bool = True
-    ) -> dataclasses.ConditionalOdds:
+    def conditional_odds(self, is_cohort: bool) -> dataclasses.ConditionalOdds:
         """Returns the conditonal odds associated with a study.
 
-        Note, that from cohort studies, the odds of **OD(D|E),
-        OD(D|Not E),** are used. For case-control studies they are
-        **OD(E|D), OD(E|Not D).**
-
         Args:
-            `is_cohort`: If `True`, return the **OD(D|E), OD(D|Not E).**\
-                Otherwise, return **OD(E|D), OD(E|Not D).**
+            is_cohort: If `True`, estimate disease given exposure.\
+                Otherwise, estimate exposure given disease.**
 
         Returns:
-            Initialised instance of `CondtionalOdds`.
+            Conditonal odds associated with a study, either **OD(D|E),**\
+                **OD(D|Not E)** or **OD(E|D), OD(E|Not D).**
         """
         # elements in the table
-        a = self._obs[0][0]
-        b = self._obs[0][1]
-        c = self._obs[1][0]
-        d = self._obs[1][1]
+        a = self.obs[0][0]
+        b = self.obs[0][1]
+        c = self.obs[1][0]
+        d = self.obs[1][1]
 
         if is_cohort:
             ab: float = a / b
@@ -152,19 +150,20 @@ class ExposureControl:
     def expected_freq(
         self, incl_row_totals: bool = False, incl_col_totals: bool = False
     ) -> pd.DataFrame:
-        """Return the expected frequencies from a contingency table.
+        """Return the expected frequencies from a contingency table under
+        the hypothesis of no association.
 
         Args:
-            `incl_row_totals`: If `True`, then include the row marginal totals\
-                in the `DataFrame`. Otherwise, do not include them.
-            `incl_col_totals`: If `True`, then include the column marginal\
-                totals in the the `DataFrame`. Otherwise, do not include them.
+            incl_row_totals: If `True`, then include the row marginal\
+                totals in the `DataFrame`. Otherwise, do not include them.
+            incl_col_totals: If `True`, then include the column\
+                marginal totals in the the `DataFrame`. Otherwise, do not\
+                include them.
 
         Returns:
-            A **Pandas** `DataFrame` representation of the expected\
-                frequencies.
+            Expected frequencies.
         """
-        res = stats.contingency.expected_freq(self._obs)
+        res = stats.contingency.expected_freq(self.obs)
         return (
             _nparray_to_pandas(
                 res,
@@ -178,8 +177,7 @@ class ExposureControl:
         chi-squared test of no association.
 
         Returns:
-            A **Pandas** `DataFrame` representation of the each observations\
-                chi-squared contribution.
+            chi-squared contributions.
         """
         res = self.table2x2.chi2_contribs
         return (
@@ -195,29 +193,28 @@ class ExposureControl:
         """Return the results of a chi-squared test of no association.
 
         Returns:
-            An initialised dataclass object of type `ChiSqTest`.
+            Results of a chi-squared test of no association.
         """
-        res = stats.chi2_contingency(self._obs, correction=False)
+        res = stats.chi2_contingency(self.obs, correction=False)
         return dataclasses.ChiSqTest(res[0], res[1], res[2])
 
     def show_table(
         self, incl_row_totals: bool = False, incl_col_totals: bool = False
     ) -> pd.DataFrame:
-        """Return the object observations as a DataFrame.
+        """Return a contingency table of the study.
 
         Args:
-            `incl_row_totals`: If `True`, then include the row marginal totals\
-                in the `DataFrame`. Otherwise, do not include them.
-            `incl_col_totals`: If `True`, then include the column marginal\
+            incl_row_totals: If `True`, then include the row marginal\
+                totals in the `DataFrame`. Otherwise, do not include them.
+            incl_col_totals: If `True`, then include the column marginal\
                 totals in the the `DataFrame`. Otherwise, do not include them.
 
         Returns:
-            A **Pandas** `DataFrame` representation of the the contingency\
-                table.
+            Contingency table of the study.
         """
         return (
             _nparray_to_pandas(
-                self._obs,
+                self.obs,
                 self,
                 include_row_totals=incl_row_totals,
                 include_col_totals=incl_col_totals)
@@ -238,13 +235,13 @@ class ThreeExposures:
             ExposureControl([exposure1, reference]))
         self.table2: ExposureControl = (
             ExposureControl([exposure2, reference]))
-        self._obs: np.ndarray = (
+        self.obs: np.ndarray = (
             np.array([exposure1, exposure2, reference]))
 
-        self._exposure1_label: str = "First Exposure"
-        self._exposure2_label: str = "Second Exposure"
-        self._referece_label: str = "Reference Exposure"
-        self._col_labels: list[str] = ["Disease", "No Disease"]
+        self.exposure1_label: str = "First Exposure"
+        self.exposure2_label: str = "Second Exposure"
+        self.referece_label: str = "Reference Exposure"
+        self.col_labels: list[str] = ["Disease", "No Disease"]
         self._update_labels_in_tables()
 
     def _update_labels_in_tables(self) -> None:
@@ -254,43 +251,9 @@ class ThreeExposures:
         self.table2.col_labels = self.col_labels
 
     @property
-    def exposure1_label(self) -> str:
-        return self._exposure1_label
-
-    @exposure1_label.setter
-    def exposure1_label(self, label: str) -> None:
-        self._exposure1_label = label
-        self._update_labels_in_tables()
-
-    @property
-    def exposure2_label(self) -> str:
-        return self._exposure2_label
-
-    @exposure2_label.setter
-    def exposure2_label(self, label: str) -> None:
-        self._exposure2_label = label
-        self._update_labels_in_tables()
-
-    @property
-    def reference_label(self) -> str:
-        return self._referece_label
-
-    @reference_label.setter
-    def reference_label(self, label: str) -> None:
-        self._referece_label = label
-        self._update_labels_in_tables()
-
-    @property
-    def col_labels(self) -> list[str]:
-        return self._col_labels
-
-    @col_labels.setter
-    def col_labels(self, labels: list[str]) -> None:
-        self._col_labels = labels
-        self._update_labels_in_tables()
-
-    @property
     def row_labels(self) -> list[str]:
+        """Return the row labels.
+        """
         return (
             [self.exposure1_label,
              self.exposure2_label,
@@ -311,7 +274,7 @@ class ThreeExposures:
             A **Pandas** `DataFrame` representation of the expected\
                 frequencies.
         """
-        res = stats.contingency.expected_freq(self._obs)
+        res = stats.contingency.expected_freq(self.obs)
         return (
             _nparray_to_pandas(
                 res,
@@ -328,8 +291,8 @@ class ThreeExposures:
             A **Pandas** `DataFrame` representation of the each observations\
                 chi-squared contribution.
         """
-        exp: np.ndarray = stats.contingency.expected_freq(self._obs)
-        res: np.ndarray = np.square(self._obs - exp) / exp
+        exp: np.ndarray = stats.contingency.expected_freq(self.obs)
+        res: np.ndarray = np.square(self.obs - exp) / exp
         return (
             _nparray_to_pandas(
                 res,
@@ -345,7 +308,7 @@ class ThreeExposures:
         Returns:
             An initialised dataclass object of type `ChiSqTest`.
         """
-        res = stats.chi2_contingency(self._obs, correction=False)
+        res = stats.chi2_contingency(self.obs, correction=False)
         return dataclasses.ChiSqTest(res[0], res[1], res[2])
 
     def show_table(
@@ -364,7 +327,7 @@ class ThreeExposures:
         """
         return (
             _nparray_to_pandas(
-                self._obs,
+                self.obs,
                 self,
                 include_row_totals=incl_row_totals,
                 include_col_totals=incl_col_totals)
