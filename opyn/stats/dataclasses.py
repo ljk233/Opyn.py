@@ -9,331 +9,178 @@ from dataclasses import dataclass
 
 @dataclass
 class ChiSqTest():
-    """Models the results of a chi-sqared test of no association.
+    """A dataclass to model the results returned from a chi-sqared test of no
+    association.
+
+    Attributes:
+        chisq (float): Value of the **chi-squared** test statistic.
+        pval (float): **p**-value of the **chi-squared** test.
+        df (int): Degrees of freedom.
     """
 
-    _chisq: float = 0.0
-    _pval: float = 0.0
-    _df: int = 0
-
-    @property
-    def chisq(self) -> float:
-        """
-        """
-        return float(self._chisq)
-
-    @property
-    def pval(self) -> float:
-        """
-        """
-        return float(self._pval)
-
-    @property
-    def df(self) -> int:
-        """
-        """
-        return self._df
+    chisq: float
+    pval: float
+    df: int
 
     def __str__(self) -> str:
-        """Return a string representation of the object.
-        """
-        return(
+        return (
             f"chisq={self.chisq:.6f}, pval={self.pval:.6f}, df={self.df}"
         )
 
     def __repr__(self) -> str:
-        """Return a string representation of the object.
-
-        Same as the `str` representation, but includes the class name.
-        """
-        return(
-            f"ChiSqTest({self})"
-        )
+        return f"chisqtest({self})"
 
 
 @dataclass
 class ZConfInt:
-    """Models an approximate **z**-interval.
+    """A dataclass to model an approximate 100(1-**alpha**)% **z**-interval.
+
+    Attributes:
+        lower (float): Lower boundary
+        upper (float): Upper boundary
     """
 
-    _lower: float = 0.0
-    _upper: float = 0.0
-
-    @property
-    def lower(self) -> float:
-        """
-        """
-        return float(self._lower)
-
-    @property
-    def upper(self) -> float:
-        """
-        """
-        return float(self._upper)
+    lower: float
+    upper: float
 
     def __str__(self) -> str:
-        """Return a string representation of the object.
-        """
-        return(
-            f"lower={self.lower:.6f}, upper={self.upper:.6f}"
-        )
+        return f"lower={self.lower:.6f}, upper={self.upper:.6f}"
 
     def __repr__(self) -> str:
-        """Return a string representation of the object.
-
-        Same as the `str` representation, but includes the class name.
-        """
-        return(
-            f"zconfint({self})"
-        )
+        return f"zconfint({self})"
 
 
 @dataclass
 class RelativeRisk:
-    """A dataclass to model the relative risk of a cohort study.
+    """Model the relative risk of an observational study.
+
+    Attributes:
+        lower (float): Lower boundary
+        point (float): Point estimate
+        upper (float): Upper boundary
     """
 
-    _point: float = 0.0
-    _lower: float = 0.0
-    _upper: float = 0.0
-
-    @property
-    def point(self) -> float:
-        return float(self._point)
-
-    @property
-    def lower(self) -> float:
-        """
-        """
-        return float(self._lower)
-
-    @property
-    def upper(self) -> float:
-        """
-        """
-        return float(self._upper)
+    point: float
+    lower: float
+    upper: float
 
     def __str__(self) -> str:
-        """Return a string representation of the object.
-        """
         return(
-            f"point={self.point:.6f}"
-            f", zconfint={{lower={self.lower:.6f}, upper={self.upper:.6f}}}"
+            f"{self.point:.6f}"
+            f", zconfint(lower={self.lower:.6f}, upper={self.upper:.6f})"
         )
 
     def __repr__(self) -> str:
-        """Return a string representation of the object.
-
-        Same as the `str` representation, but includes the class name.
-        """
-        return(
-            f"RelativeRisk({self})"
-        )
+        return f"relativerisk({self})"
 
 
 @dataclass
 class OddsRatio:
-    """A dataclass to model the odds ratio of a cohort and case-control study.
+    """A dataclass to model the odds ratio of an observational study.
+
+    Attributes:
+        lower (float): Lower boundary
+        point (float): Point estimate
+        upper (float): Upper boundary
     """
 
-    _point: float = 0.0
-    _lower: float = 0.0
-    _upper: float = 0.0
-
-    @property
-    def point(self) -> float:
-        return float(self._point)
-
-    @property
-    def lower(self) -> float:
-        """
-        """
-        return float(self._lower)
-
-    @property
-    def upper(self) -> float:
-        """
-        """
-        return float(self._upper)
+    point: float = 0.0
+    lower: float = 0.0
+    upper: float = 0.0
 
     def __str__(self) -> str:
-        """Return a string representation of the object.
-        """
         return(
             f"point={self.point:.6f}"
             f", zconfint={{lower={self.lower:.6f}, upper={self.upper:.6f}}}"
         )
 
     def __repr__(self) -> str:
-        """Return a string representation of the object.
-
-        Same as the `str` representation, but includes the class name.
-        """
-        return(
-            f"OddsRatio({self})"
-        )
+        return f"oddsratio({self})"
 
 
 @dataclass
 class ConditionalOdds:
-    """Models the odds of disease given exposure in a cohort and case-control
-    study.
+    """A dataclass to model the conditional odds used in an observational study.
+
+    Attributes:
+        a_given_b (float)
+        a_given_not_b (float)
     """
 
-    _a_given_b: float = 0.0
-    _a_given_not_b: float = 0.0
-
-    @property
-    def disease_exposed(self) -> float:
-        """
-        """
-        return float(self._a_given_b)
-
-    @property
-    def disease_not_exposed(self) -> float:
-        """
-        """
-        return float(self._a_given_not_b)
-
-    @property
-    def exposed_disease(self) -> float:
-        """
-        """
-        return float(self._a_given_b)
-
-    @property
-    def exposed_no_disease(self) -> float:
-        """
-        """
-        return float(self._a_given_not_b)
+    a_given_b: float
+    a_given_not_b: float
 
     def __str__(self) -> str:
-        """Return a string representation of the object.
-        """
         return(
-            f"OD(A|B)={self.disease_exposed:.6f}"
-            f", OD(A|NotB)={self.disease_not_exposed:.6f}"
+            f"a_b={self.a_given_b:.6f}, a_not_b={self.a_given_not_b:.6f}"
         )
 
     def __repr__(self) -> str:
-        """Return a string representation of the object.
-
-        Same as the `str` representation, but includes the class name.
-        """
-        return(
-            f"ConditionalOdds({self})"
-        )
+        return f"conditonalodds({self})"
 
 
 @dataclass
 class Normal:
-    """Models a normal distribution.
+    """A dataclass to model the description of a normal distribution.
+
+    Attributes:
+        mean (float): Mean of the distribtribution.
+        var (float): Variance of the distribution.
     """
 
-    _mean: float
-    _var: float
-
-    @property
-    def mean(self) -> float:
-        """
-        """
-        return float(self._mean)
-
-    @property
-    def var(self) -> float:
-        """
-        """
-        return float(self._var)
+    mean: float
+    var: float
 
     def __str__(self) -> str:
-        """Return a string representation of the object.
-        """
         return(
             f"mean={self.mean:.6f}"
             f", var={self.var:.6f}"
         )
 
     def __repr__(self) -> str:
-        """Return a string representation of the object.
-
-        Same as the `str` representation, but includes the class name.
-        """
-        return(
-            f"Normal({self})"
-        )
+        return f"normal({self})"
 
 
 @dataclass
 class ZTest:
-    """Models the results of a z-test.
+    """A dataclass to model the results of a **z**-test.
+
+    Attributes:
+        zstat (float): Value of the **z**-statistic.
+        pval (float): **p**-value of **z**-test.
     """
 
-    _zstat: float
-    _pval: float
-
-    @property
-    def zstat(self) -> float:
-        """
-        """
-        return self._zstat
-
-    @property
-    def pval(self) -> float:
-        """
-        """
-        return self._pval
+    zstat: float
+    pval: float
 
     def __str__(self) -> str:
-        """Return a string representation of the object.
-        """
         return(
             f"zstat={self.zstat:.6f}"
             f", pval={self.pval:.6f}"
         )
 
     def __repr__(self) -> str:
-        """Return a string representation of the object.
-
-        Same as the `str` representation, but includes the class name.
-        """
-        return(
-            f"ztest({self})"
-        )
+        return f"ztest({self})"
 
 
 @dataclass
 class PairedVars:
-    """Models the relationship between paired continuous variables.
+    """A dataclass to model the relationship between paired continuous
+    variables.
+
+    Attributes:
+        cov (float): Covariance of the two variables.
+        r (float): Value of the Pearson correlation coefficient.
     """
 
-    _cov: float
-    _r: float
-
-    @property
-    def cov(self) -> float:
-        """
-        """
-        return self._cov
-
-    @property
-    def r(self) -> float:
-        """
-        """
-        return self._corr_coeff
+    cov: float
+    r: float
 
     def __str__(self) -> str:
-        """Return a string representation of the object.
-        """
         return(
             f"cov={self.cov:.6f}"
             f", r={self.r:.6f}"
         )
 
     def __repr__(self) -> str:
-        """Return a string representation of the object.
-
-        Same as the `str` representation, but includes the class name.
-        """
-        return(
-            f"pairedvars({self})"
-        )
+        return f"pairedvars({self})"
