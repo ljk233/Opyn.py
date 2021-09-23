@@ -23,9 +23,7 @@ class ChiSqTest():
     df: int
 
     def __str__(self) -> str:
-        return (
-            f"chisq={self.chisq:.6f}, pval={self.pval:.6f}, df={self.df}"
-        )
+        return f"chisq={self.chisq:.6f}, pval={self.pval:.6f}, df={self.df}"
 
     def __repr__(self) -> str:
         return f"chisqtest({self})"
@@ -66,8 +64,7 @@ class RelativeRisk:
 
     def __str__(self) -> str:
         return(
-            f"{self.point:.6f}"
-            f", zconfint(lower={self.lower:.6f}, upper={self.upper:.6f})"
+            f"{self.point:.6f}, lcb={self.lower:.6f}, ucb={self.upper:.6f})"
         )
 
     def __repr__(self) -> str:
@@ -90,8 +87,7 @@ class OddsRatio:
 
     def __str__(self) -> str:
         return(
-            f"point={self.point:.6f}"
-            f", zconfint={{lower={self.lower:.6f}, upper={self.upper:.6f}}}"
+            f"{self.point:.6f}, lcb={self.lower:.6f}, ucb={self.upper:.6f})"
         )
 
     def __repr__(self) -> str:
@@ -111,9 +107,7 @@ class ConditionalOdds:
     a_given_not_b: float
 
     def __str__(self) -> str:
-        return(
-            f"a_b={self.a_given_b:.6f}, a_not_b={self.a_given_not_b:.6f}"
-        )
+        return f"a_b={self.a_given_b:.6f}, a_not_b={self.a_given_not_b:.6f}"
 
     def __repr__(self) -> str:
         return f"conditonalodds({self})"
@@ -132,10 +126,7 @@ class Normal:
     var: float
 
     def __str__(self) -> str:
-        return(
-            f"mean={self.mean:.6f}"
-            f", var={self.var:.6f}"
-        )
+        return f"mean={self.mean:.6f}, var={self.var:.6f}"
 
     def __repr__(self) -> str:
         return f"normal({self})"
@@ -154,10 +145,7 @@ class ZTest:
     pval: float
 
     def __str__(self) -> str:
-        return(
-            f"zstat={self.zstat:.6f}"
-            f", pval={self.pval:.6f}"
-        )
+        return f"zstat={self.zstat:.6f}, pval={self.pval:.6f}"
 
     def __repr__(self) -> str:
         return f"ztest({self})"
@@ -177,10 +165,7 @@ class PairedVars:
     r: float
 
     def __str__(self) -> str:
-        return(
-            f"cov={self.cov:.6f}"
-            f", r={self.r:.6f}"
-        )
+        return f"cov={self.cov:.6f}, r={self.r:.6f}"
 
     def __repr__(self) -> str:
         return f"pairedvars({self})"
