@@ -5,7 +5,7 @@ This module was implemented following studies of M249, Book 1.
 Currently only case-control studies and cohort studies are supported.
 
 Classes:
-    - **ExposureControl**:
+    - **TwoByTwo**:
         Models an observational study with two exposures.
     - **ThreeExposures**:
         Models an observational study with three exposure cateogries.
@@ -24,28 +24,28 @@ Examples:
 from __future__ import annotations
 from scipy import stats
 from statsmodels.stats import contingency_tables
-from . import dataclasses
+from .dataclasses import ChiSqTest, OddsRatio, RelativeRisk
 import pandas as pd
 import numpy as np
 from numpy.typing import ArrayLike
 from typing import Union
 
 
-class ExposureControl:
+class TwoByTwo:
     """Models an observational study with two exposures.
 
     It has a composite relationship with `Table2x2` class from
-    `statsmodels`, such that an `ExposureControl` *has-a* `Table2x2`.
+    `statsmodels`, such that a `TwoByTwo` *has-a* `Table2x2`.
 
     Parameters:
-        obs (ArrayLike): Observations from the study. It is expected that\
-            the data structure can be cast to a **numpy** `ndarray`.\
+        table (ArrayLike): Observations from the study. It is expected that\
+            the data structure can be cast to a **numpy** `array`.\
             See **[https://bit.ly/3kdQ7zg](statsmodels)** for examples.
 
     Attributes:
         col_labels (list[str]): Column labels to be used in a `DataFrame`.\
             Default is `["Disease", "No Disease"]`.
-        obs (np.ndarray): Results of the study.
+        table (np.ndarray): Table of results.
         row_labels (list[str]): Column labels to be used in a `DataFrame`.\
             Default is `["Exposed", "Not Exposed"]`.
         table2x2 (Table2x2): Initialised instance of **statsmodels**\
@@ -55,122 +55,125 @@ class ExposureControl:
         There is no type checking on **col_labels** and **row_label**.
 
     Methods:
-        - **conditional odds**
-            - Returns the conditonal odds associated with a study.
-        - **expected_freq**
-            - Return the expected frequencies from a contingency table under
-            the hypothesis of no association.
-        - **chi2_contribs**
-            - Return the chi-squared contributions for each observation used
-            in a chi-squared test of no association.
-        - **chi2_test**
-            - Return the results of a chi-squared test of no association.
-        - **odds_ratio**
-            - Return the point and (1-alpha)% confidence interval estimates
-            for the odds ratio.
-        - **relative_risk**
-            - Return the point and (1-alpha)% confidence interval estimates
-            for the relative risk.
-        - **show_table**
-            - Return a contingency table of the study.
+        chi2_contribs: Return the chi-squared contributions for each\
+            observation used in a chi-squared test of no association.
+        chi2_test: Return the results of a chi-squared test of no\
+            association.
+        expected_freq: Return the expected frequencies from a contingency\
+            table under the null hypothesis of no association.
+        odds_ratio: Return point and interval estimates for the odds ratio.
+        relative_risk: Return point and interval estimates for the relative\
+            risk.
+        show_table: Return a contingency table.
     """
 
-    def __init__(self, obs: ArrayLike) -> None:
+    def __init__(self, table: ArrayLike) -> None:
         """Initialises the object.
 
         Args:
-            obs: some data structure representing the data.\
+            table: some data structure representing the data.\
                 Do not include marginal totals.\
                 Example data structure: `[[1, 5], [10, 15]]`
         """
-        self.obs: np.ndarray = np.array(obs)
+        self.table: np.ndarray = np.array(table)
         self.table2x2: contingency_tables.Table2x2 = (
-            contingency_tables.Table2x2(self.obs)
+            contingency_tables.Table2x2(self.table)
         )
         self.row_labels: list[str] = ["Exposed", "Not Exposed"]
         self.col_labels: list[str] = ["Disease", "No Disease"]
 
+    @classmethod
+    def from_dataframe(
+        cls,
+        df: pd.DataFrame,
+        exposure: str = "exposure",
+        outcome: str = "outcome"
+    ) -> TwoByTwo:
+        """Return an instance of TwoByTwo.
+
+        Args:
+            df (pd.DataFrame): [description]
+            exposure (str, optional): [description].
+            outcome (str, optional): [description].
+
+        Returns:
+            StratifiedAnalysis: [description]
+        """
+        arr = df.pivot(index=exposure, columns=outcome).to_numpy()
+        return cls(arr.reshape((2, 2)))
+
     def relative_risk(
-        self, alpha: float = 0.05
-    ) -> dataclasses.RelativeRisk:
+        self, alpha: float = 0.05, as_pandas: bool = True
+    ) -> Union[pd.DataFrame, RelativeRisk]:
         """Return the point and (1-alpha)% confidence interval estimates for
         the relative risk.
 
         Args:
             alpha: Significance level for the confidence interval.
+            as_pandas: bool: It True, return the estimates as a DataFrame.\
+                Otherwise, return the dataclass representation.
 
         Returns:
             Point and (1-alpha)% confidence interval estimates for\
             the relative risk.
         """
-        res = self.table2x2.riskratio_confint(alpha)
-        return (
-            dataclasses.RelativeRisk(self.table2x2.riskratio, res[0], res[1]))
+        ci = self.table2x2.riskratio_confint(alpha)
+        riskratio = RelativeRisk(
+            self.table2x2.riskratio,
+            self.table2x2.log_riskratio_se,
+            ci[0],
+            ci[1]
+        )
+        if as_pandas:
+            return riskratio.as_df()
+        else:
+            return riskratio   
 
-    def odds_ratio(self, alpha: float = 0.05) -> dataclasses.OddsRatio:
+    def odds_ratio(
+        self, alpha: float = 0.05, as_pandas: bool = True
+    ) -> Union[pd.DataFrame, OddsRatio]:
         """Return the point and (1-alpha)% confidence interval estimates for
         the odds ratio.
 
         Args:
             alpha: Significance level for the confidence interval.
+            as_pandas: bool: It True, return the estimates as a DataFrame.\
+                Otherwise, return the dataclass representation.
 
         Returns:
             Point and (1-alpha)% confidence interval estimates for\
             the odds ratio.
         """
-        res = self.table2x2.oddsratio_confint(alpha)
-        return dataclasses.OddsRatio(self.table2x2.oddsratio, res[0], res[1])
-
-    def conditional_odds(self, is_cohort: bool) -> dataclasses.ConditionalOdds:
-        """Returns the conditonal odds associated with a study.
-
-        Args:
-            is_cohort: If `True`, estimate disease given exposure.\
-                Otherwise, estimate exposure given disease.**
-
-        Returns:
-            Conditonal odds associated with a study, either **OD(D|E),**\
-                **OD(D|Not E)** or **OD(E|D), OD(E|Not D).**
-        """
-        # elements in the table
-        a = self.obs[0][0]
-        b = self.obs[0][1]
-        c = self.obs[1][0]
-        d = self.obs[1][1]
-
-        if is_cohort:
-            ab: float = a / b
-            anb: float = c / d
+        ci = self.table2x2.oddsratio_confint(alpha)
+        oddsratio = OddsRatio(
+            self.table2x2.oddsratio,
+            self.table2x2.log_oddsratio_se,
+            ci[0],
+            ci[1]
+        )
+        if as_pandas:
+            return oddsratio.as_df()
         else:
-            ab: float = a / c
-            anb: float = b / d
-
-        return dataclasses.ConditionalOdds(ab, anb)
+            return oddsratio       
 
     def expected_freq(
-        self, incl_row_totals: bool = False, incl_col_totals: bool = False
+        self, show_row_totals: bool = False, show_col_totals: bool = False
     ) -> pd.DataFrame:
         """Return the expected frequencies from a contingency table under
         the hypothesis of no association.
 
         Args:
-            incl_row_totals: If `True`, then include the row marginal\
+            show_row_totals: If `True`, then include the row marginal\
                 totals in the `DataFrame`. Otherwise, do not include them.
-            incl_col_totals: If `True`, then include the column\
+            show_col_totals: If `True`, then include the column\
                 marginal totals in the the `DataFrame`. Otherwise, do not\
                 include them.
 
         Returns:
             Expected frequencies.
         """
-        res = stats.contingency.expected_freq(self.obs)
-        return (
-            _nparray_to_pandas(
-                res,
-                self,
-                include_row_totals=incl_row_totals,
-                include_col_totals=incl_col_totals)
-        )
+        res = stats.contingency.expected_freq(self.table)
+        return self._to_pandas(res, show_row_totals, show_col_totals)
 
     def chi2_contribs(self) -> pd.DataFrame:
         """Return the chi-squared contributions for each observation used in a
@@ -180,196 +183,241 @@ class ExposureControl:
             chi-squared contributions.
         """
         res = self.table2x2.chi2_contribs
-        return (
-            _nparray_to_pandas(
-                res,
-                self,
-                include_row_totals=False,
-                include_col_totals=False
-            )
-        )
+        return self._to_pandas(res, False, False)
 
-    def chi2_test(self) -> dataclasses.ChiSqTest:
+    def chi2_test(
+        self,
+        as_pandas: bool = True
+    ) -> Union[pd.DataFrame, ChiSqTest]:
         """Return the results of a chi-squared test of no association.
+
+        Args:
+            as_pandas: bool: It True, return the estimates as a DataFrame.\
+                Otherwise, return the dataclass representation.
 
         Returns:
             Results of a chi-squared test of no association.
         """
-        res = stats.chi2_contingency(self.obs, correction=False)
-        return dataclasses.ChiSqTest(res[0], res[1], res[2])
+        res = stats.chi2_contingency(self.table, correction=False)
+        chisq = ChiSqTest(res[0], res[1], res[2])
+        if as_pandas:
+            return chisq.as_df()
+        else:
+            return chisq   
 
     def show_table(
-        self, incl_row_totals: bool = False, incl_col_totals: bool = False
+        self, show_row_totals: bool = False, show_col_totals: bool = False
     ) -> pd.DataFrame:
         """Return a contingency table of the study.
 
         Args:
-            incl_row_totals: If `True`, then include the row marginal\
+            show_row_totals: If `True`, then include the row marginal\
                 totals in the `DataFrame`. Otherwise, do not include them.
-            incl_col_totals: If `True`, then include the column marginal\
+            show_col_totals: If `True`, then include the column marginal\
                 totals in the the `DataFrame`. Otherwise, do not include them.
 
         Returns:
             Contingency table of the study.
         """
-        return (
-            _nparray_to_pandas(
-                self.obs,
-                self,
-                include_row_totals=incl_row_totals,
-                include_col_totals=incl_col_totals)
-        )
+        return self._to_pandas(self.table, show_row_totals, show_col_totals)
+
+    def _to_pandas(
+        self,
+        res: np.ndarray,
+        show_row_totals: bool,
+        show_col_totals: bool
+    ) -> pd.DataFrame:
+        """Helper method.
+
+        Args:
+            res: Results to display as a DataFrame.
+            show_row_totals: If `True`, then include the row marginal\
+                totals in the `DataFrame`. Otherwise, do not include them.
+            show_col_totals: If `True`, then include the column\
+                marginal totals in the the `DataFrame`. Otherwise, do not\
+                include them.
+
+        Returns:
+            Receiver's table as a **pandas** DataFrame.
+        """
+
+        # initialise a new DataFrame
+        df: pd.DataFrame = pd.DataFrame(res, self.row_labels, self.col_labels)
+
+        # melt the df, then pivot it
+        df.reset_index(inplace=True)
+        df.rename(columns={"index": "Exposure"}, inplace=True)
+        df = df.melt(id_vars="Exposure")
+        df = df.pivot_table(
+            index="Exposure",
+            columns="variable",
+            values="value",
+            aggfunc=np.sum,
+            margins=True,
+            margins_name="Total")
+        df.rename_axis(["Outcome"], axis=1, inplace=True)
+
+        # remove marginal totals
+        if not show_row_totals:
+            df.drop(columns="Total", inplace=True)
+        if not show_col_totals:
+            df.drop(index="Total", inplace=True)
+
+        return df
 
 
-class ThreeExposures:
-    """Models an observational study where there are three exposures.
-
-    It has a composite relationship with `statsmodels` `Table2x2` class,
-    where an `ThreeExposures` *has-a* `ExposureControl`.
+class StratifiedAnalysis:
+    """Analyses for a collection of 2x2 contingency tables.
     """
 
     def __init__(
-        self, exposure1: list[int], exposure2: list[int], reference: list[int]
+        self,
+        data: ArrayLike,
+        strata_labels: list[str]
     ) -> None:
-        self.table1: ExposureControl = (
-            ExposureControl([exposure1, reference]))
-        self.table2: ExposureControl = (
-            ExposureControl([exposure2, reference]))
-        self.obs: np.ndarray = (
-            np.array([exposure1, exposure2, reference]))
-
-        self.exposure1_label: str = "First Exposure"
-        self.exposure2_label: str = "Second Exposure"
-        self.referece_label: str = "Reference Exposure"
+        """Initialise an instance of `StratifiedAnalysis`
+        """
+        self.tables: ArrayLike = data
+        if isinstance(data, np.ndarray):
+            data = data.tolist()
+        self.statified_table: contingency_tables.StratifiedTable = (
+            contingency_tables.StratifiedTable(data)
+        )
+        self.row_labels: list[str] = ["Exposed", "Not Exposed"]
         self.col_labels: list[str] = ["Disease", "No Disease"]
-        self._update_labels_in_tables()
-
-    def _update_labels_in_tables(self) -> None:
-        self.table1.row_labels = [self.exposure1_label, self.reference_label]
-        self.table2.row_labels = [self.exposure2_label, self.reference_label]
-        self.table1.col_labels = self.col_labels
-        self.table2.col_labels = self.col_labels
+        self.strata_labels = strata_labels
 
     @property
-    def row_labels(self) -> list[str]:
-        """Return the row labels.
+    def aggregated(self) -> TwoByTwo:
+        """Return the aggregated data as a 2x2 contingency table.
         """
-        return (
-            [self.exposure1_label,
-             self.exposure2_label,
-             self.reference_label])
+        obs: list[list[int, int]] = [[0, 0], [0, 0]]
+        for table in self.tables:
+            obs[0][0] += table[0][0]
+            obs[0][1] += table[0][1]
+            obs[1][0] += table[1][0]
+            obs[1][1] += table[1][1]
+        two_by_two: TwoByTwo = TwoByTwo(obs)
+        two_by_two.row_labels = self.row_labels
+        two_by_two.col_labels = self.col_labels
+        return two_by_two
 
-    def expected_freq(
-        self, incl_row_totals: bool = False, incl_col_totals: bool = False
-    ) -> pd.DataFrame:
-        """Return the expected frequencies from a contingency table.
+    @property
+    def as_strata(self) -> dict[str, TwoByTwo]:
+        """Return a dictionary of stratified tables for stratum-specific
+        analysis.
+
+        Returns:
+            Add summary
+        """
+        strata: dict[str, TwoByTwo] = {}
+        for count, stratum in enumerate(self.tables):
+            table: TwoByTwo = TwoByTwo(stratum)
+            table.row_labels = self.row_labels
+            table.col_labels = self.col_labels
+            strata[self.strata_labels[count]] = table
+        return strata
+
+    @classmethod
+    def from_dataframe(
+        cls,
+        df: pd.DataFrame,
+        strata_labels: list[str],
+        exposure: str = "exposure",
+        outcome: str = "outcome",
+        stratum: str = "stratum"
+    ) -> StratifiedAnalysis:
+        """Return an instance of StratifiedAnalysis.
 
         Args:
-            incl_row_totals: If True, then include the row marginal totals in\
-                the DataFrame. Otherwise, do not include them.
-            incl_col_totals: If True, then include the column marginal totals\
-                in the the DataFrame. Otherwise, do not include them.
+            df (pd.DataFrame): [description]
+            strata_labels: Descriptive labels for the strata.
+            exposure (str, optional): [description]. Defaults to "exposure".
+            outcome (str, optional): [description]. Defaults to "outcome".
+            stratum (str, optional): [description]. Defaults to "stratum".
 
         Returns:
-            A **Pandas** `DataFrame` representation of the expected\
-                frequencies.
+            StratifiedAnalysis: [description]
         """
-        res = stats.contingency.expected_freq(self.obs)
-        return (
-            _nparray_to_pandas(
-                res,
-                self,
-                include_row_totals=incl_row_totals,
-                include_col_totals=incl_col_totals)
-        )
+        arr = df.pivot(index=[stratum, exposure], columns=outcome).to_numpy()
+        return cls(arr.reshape((2, 2, len(strata_labels))), strata_labels)
 
-    def chi2_contribs(self) -> pd.DataFrame:
-        """Return the chi-squared contributions for each observation used in a
-        chi-squared test of no association.
+    def adjusted_odds_ratio(
+        self, alpha: float = 0.05, as_pandas: bool = True
+    ) -> Union[pd.DataFrame, OddsRatio]:
+        """Return the point and (1-alpha)% confidence interval estimates for
+        the adjusted odds ratio.
 
-        Returns:
-            A **Pandas** `DataFrame` representation of the each observations\
-                chi-squared contribution.
-        """
-        exp: np.ndarray = stats.contingency.expected_freq(self.obs)
-        res: np.ndarray = np.square(self.obs - exp) / exp
-        return (
-            _nparray_to_pandas(
-                res,
-                self,
-                include_row_totals=False,
-                include_col_totals=False
-            )
-        )
-
-    def chi2_test(self) -> dataclasses.ChiSqTest:
-        """Return the results of a chi-squared test of no association.
-
-        Returns:
-            An initialised dataclass object of type `ChiSqTest`.
-        """
-        res = stats.chi2_contingency(self.obs, correction=False)
-        return dataclasses.ChiSqTest(res[0], res[1], res[2])
-
-    def show_table(
-        self, incl_row_totals: bool = False, incl_col_totals: bool = False
-    ) -> pd.DataFrame:
-        """Return the object observations as a DataFrame.
+        It uses the Mantel-Haenszel odds ratio.
 
         Args:
-            incl_row_totals: If True, then include the row marginal totals in\
-                the DataFrame. Otherwise, do not include them.
-            incl_col_totals: If True, then include the column marginal totals\
-                in the the DataFrame. Otherwise, do not include them.
+            alpha: Significance level for the confidence interval.
+            as_pandas:
 
         Returns:
-            Add desc
+            Point and (1-alpha)% confidence interval estimates for\
+            the odds ratio.
         """
-        return (
-            _nparray_to_pandas(
-                self.obs,
-                self,
-                include_row_totals=incl_row_totals,
-                include_col_totals=incl_col_totals)
+        ci = self.statified_table.oddsratio_pooled_confint(alpha)
+        oddsratio = OddsRatio(
+            self.statified_table.oddsratio_pooled,
+            self.statified_table.logodds_pooled_se,
+            ci[0],
+            ci[1]
         )
+        if as_pandas:
+            return oddsratio.as_df()
+        else:
+            return oddsratio 
 
+    def test_no_association(
+        self, as_pandas: bool = True
+    ) -> Union[ChiSqTest, pd.DataFrame]:
+        """Return the results of a test that of the null hypothesis of
+        no between the exposure and the disease, adjusted for the
+        stratifying variable.
 
-def _nparray_to_pandas(
-    array: np.ndarray, obj: Union(ExposureControl, ThreeExposures),
-    include_row_totals: bool = False, include_col_totals: bool = True
-) -> pd.DataFrame:
-    """Helper function.
-    Return a **numpy** array as a **pandas** DataFrame.
+        Uses the Mantel-Haenszel test.
 
-    Args:
-        array: [description]
-        obj: [description]
+        Returns:
+            test statistic and the p-value.
+        """
+        # get result
+        res = self.statified_table.test_null_odds(True)
+        chisq = ChiSqTest(
+            res.statistic,
+            res.pvalue,
+            1
+        )
+        if as_pandas:
+            return chisq.as_df()
+        else:
+            return chisq
 
-    Returns:
-        [description]
-    """
+    def test_homogeneity(
+        self,
+        as_pandas: bool = True
+    ) -> Union[ChiSqTest, pd.DataFrame]:
+        """Return the results test of the null hypothesis that the odds
+        ratio is the same in all _k_ strata.
 
-    # initialise a new DataFrame
-    df: pd.DataFrame = pd.DataFrame(
-        array, obj.row_labels, obj.col_labels)
+        This is the Tarone test.
 
-    # melt the df, then pivot it
-    df.reset_index(inplace=True)
-    df.rename(columns={"index": "Exposed Category"}, inplace=True)
-    df = df.melt(id_vars="Exposed Category")
-    df = df.pivot_table(
-        index="Exposed Category",
-        columns="variable",
-        values="value",
-        aggfunc=np.sum,
-        margins=True,
-        margins_name="Total")
-    df.rename_axis(["Disease Category"], axis=1, inplace=True)
+        Args:
+            adjust: If true, use the Tarone adjustment to achieve the chi^2\
+                asymptotic distribution. 
 
-    # add the marginal totals if needed
-    if not include_row_totals:
-        df.drop(columns="Total", inplace=True)
-    if not include_col_totals:
-        df.drop(index="Total", inplace=True)
-
-    return df
+        Returns:
+            test statistic and the p-value.
+        """
+        # get result
+        res = self.statified_table.test_equal_odds(True)
+        chisq = ChiSqTest(
+            res.statistic,
+            res.pvalue,
+            1
+        )
+        if as_pandas:
+            return chisq.as_df()
+        else:
+            return chisq

@@ -5,10 +5,39 @@
 # %%
 from __future__ import annotations
 from dataclasses import dataclass
+import pandas as pd
+
+
+def _as_df(obj: object) -> pd.DataFrame:
+    """Return a representation of the given object as a DataFrame.
+    """
+    variables = obj.__dict__
+    df: pd.DataFrame = pd.DataFrame(
+        data=[variables.values()],
+        index=[type(obj).__name__],
+        columns=variables.keys()
+    )
+    return df
+
+
+class _PDDataClass:
+    """A helper class that can represent a dataclass as a **Pandas**
+    `DataFrame`.
+    """
+
+    def as_df(self) -> pd.DataFrame:
+        """Return a representation of the given object as a DataFrame.
+        """
+        df: pd.DataFrame = pd.DataFrame(
+            data=[self.__dict__.values()],
+            index=[type(self).__name__],
+            columns=self.__dict__.keys()
+        )
+        return df
 
 
 @dataclass
-class ChiSqTest():
+class ChiSqTest(_PDDataClass):
     """A dataclass to model the results returned from a chi-sqared test of no
     association.
 
@@ -21,12 +50,6 @@ class ChiSqTest():
     chisq: float
     pval: float
     df: int
-
-    def __str__(self) -> str:
-        return f"chisq={self.chisq:.6f}, pval={self.pval:.6f}, df={self.df}"
-
-    def __repr__(self) -> str:
-        return f"chisqtest({self})"
 
 
 @dataclass
@@ -49,49 +72,36 @@ class ZConfInt:
 
 
 @dataclass
-class RelativeRisk:
+class RelativeRisk(_PDDataClass):
     """Model the relative risk of an observational study.
 
     Attributes:
-        lower (float): Lower boundary
-        point (float): Point estimate
-        upper (float): Upper boundary
+        estimate (float): Point estimate
+        lcb (float): Lower boundary
+        ucb (float): Upper boundary
     """
 
-    point: float
-    lower: float
-    upper: float
-
-    def __str__(self) -> str:
-        return(
-            f"{self.point:.6f}, lcb={self.lower:.6f}, ucb={self.upper:.6f})"
-        )
-
-    def __repr__(self) -> str:
-        return f"relativerisk({self})"
+    estimate: float
+    ese: float
+    lcb: float
+    ucb: float
 
 
 @dataclass
-class OddsRatio:
+class OddsRatio(_PDDataClass):
     """A dataclass to model the odds ratio of an observational study.
 
     Attributes:
-        lower (float): Lower boundary
-        point (float): Point estimate
-        upper (float): Upper boundary
+        estimate (float): Point estimate
+        ese (float): Estimated standard error
+        lcb (float): Lower boundary
+        ucb (float): Upper boundary
     """
 
-    point: float = 0.0
-    lower: float = 0.0
-    upper: float = 0.0
-
-    def __str__(self) -> str:
-        return(
-            f"{self.point:.6f}, lcb={self.lower:.6f}, ucb={self.upper:.6f})"
-        )
-
-    def __repr__(self) -> str:
-        return f"oddsratio({self})"
+    estimate: float
+    ese: float
+    lcb: float
+    ucb: float
 
 
 @dataclass
@@ -110,7 +120,7 @@ class ConditionalOdds:
         return f"a_b={self.a_given_b:.6f}, a_not_b={self.a_given_not_b:.6f}"
 
     def __repr__(self) -> str:
-        return f"conditonalodds({self})"
+        return f"conditionalodds({self})"
 
 
 @dataclass
