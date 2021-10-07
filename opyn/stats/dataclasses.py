@@ -53,22 +53,35 @@ class ChiSqTest(_PDDataClass):
 
 
 @dataclass
-class ZConfInt:
+class ZConfInt(_PDDataClass):
     """A dataclass to model an approximate 100(1-**alpha**)% **z**-interval.
 
     Attributes:
-        lower (float): Lower boundary
-        upper (float): Upper boundary
+        estimate (float): Point estimate
+        ese: (float): Estimated standard error
+        lcb (float): Lower boundary
+        ucb (float): Upper boundary
     """
+    estimate: float
+    ese: float
+    lcb: float
+    ucb: float
 
-    lower: float
-    upper: float
 
-    def __str__(self) -> str:
-        return f"lower={self.lower:.6f}, upper={self.upper:.6f}"
+@dataclass
+class TConfInt(_PDDataClass):
+    """A dataclass to model an approximate 100(1-**alpha**)% **t**-interval.
 
-    def __repr__(self) -> str:
-        return f"zconfint({self})"
+    Attributes:
+        estimate (float): Point estimate
+        ese: (float): Estimated standard error
+        lcb (float): Lower boundary
+        ucb (float): Upper boundary
+    """
+    estimate: float
+    ese: float
+    lcb: float
+    ucb: float
 
 
 @dataclass
@@ -143,22 +156,29 @@ class Normal:
 
 
 @dataclass
-class ZTest:
+class ZTest(_PDDataClass):
     """A dataclass to model the results of a **z**-test.
 
     Attributes:
-        zstat (float): Value of the **z**-statistic.
-        pval (float): **p**-value of **z**-test.
+        zstat (float): Test statistic.
+        pval (float): Significance probability.
     """
-
     zstat: float
     pval: float
 
-    def __str__(self) -> str:
-        return f"zstat={self.zstat:.6f}, pval={self.pval:.6f}"
 
-    def __repr__(self) -> str:
-        return f"ztest({self})"
+@dataclass
+class TTest(_PDDataClass):
+    """A dataclass to model the results of a **z**-test.
+
+    Attributes:
+        tstat (float): Test statistic.
+        pval (float): Significance probability.
+        dof (int): Degrees of Freedom
+    """
+    tstat: float
+    pval: float
+    dof: int
 
 
 @dataclass
@@ -168,14 +188,22 @@ class PairedVars:
 
     Attributes:
         cov (float): Covariance of the two variables.
-        r (float): Value of the Pearson correlation coefficient.
+        r (float): Pearson correlation coefficient.
     """
 
     cov: float
     r: float
 
-    def __str__(self) -> str:
-        return f"cov={self.cov:.6f}, r={self.r:.6f}"
 
-    def __repr__(self) -> str:
-        return f"pairedvars({self})"
+@dataclass
+class PearsonR(_PDDataClass):
+    """A dataclass to model the relationship the Pearson correlation
+    coefficient between two continuous variables.
+
+    Attributes:
+        r (float): Pearson correlation coefficient.
+        pval (float): P-value of test of null correlation.
+    """
+
+    r: float
+    pval: float
