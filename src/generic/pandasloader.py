@@ -4,9 +4,9 @@ A collection of functions that will return a Pandas `DataFrame`
 representation of a dataset found in .data.
 """
 
-from __future__ import annotations
-from typing import Any, Union
-import pandas as pd
+from __future__ import annotations as _annotations
+from typing import NoReturn
+import pandas as _pd
 
 
 class PandasLoader():
@@ -37,7 +37,16 @@ class PandasLoader():
             counter += 1
         return rel_path + self._data_path + '/'
 
-    def get(self, f: str) -> pd.DataFrame:
+    @property
+    def DESC_PATH(self) -> str:
+        counter: int = 0
+        rel_path: str = ''
+        while counter < self._depth:
+            rel_path = rel_path + '../'
+            counter += 1
+        return rel_path + self._data_path + '/descriptions/'
+
+    def get(self, f: str) -> _pd.DataFrame:
         """
         Loads a csv file from the receiver's data directory and returns
         its a **Pandas** `DataFrame`.
@@ -57,7 +66,7 @@ class PandasLoader():
         assert f + '.csv' in self.list_files(), (
             f"{f + '.csv'} is not in the data dir, use list_files() to check"
         )
-        return pd.read_csv(self.PATH + f + '.csv')
+        return _pd.read_csv(self.PATH + f + '.csv')
 
     def list_files(self) -> list[str]:
         """
@@ -67,8 +76,8 @@ class PandasLoader():
         from os import listdir
         return listdir(self.PATH)
 
-    def get_description(self, f: str) -> None:
-        """Print a description of the data refere
+    def get_description(self, f: str) -> NoReturn:
+        """Print a description of the data.
 
         Args:
             f: file name, no file type.
@@ -78,9 +87,11 @@ class PandasLoader():
                 in the data dir
         """
         from os import listdir
-        descriptions = listdir(self.PATH + '/descriptions/')
-        assert f + '.txt' in descriptions, (
+        assert f + '.txt' in listdir(self.DESC_PATH), (
             f"No description available for {f}."
         )
-        with open(self.PATH + '/descriptions/' + f + '.txt') as f:
-            print(f.read())
+        out = ""
+        with open(f'{self.DESC_PATH + f}.txt') as desc_file:
+            for line in desc_file.readlines():
+                out += line
+        print(out)

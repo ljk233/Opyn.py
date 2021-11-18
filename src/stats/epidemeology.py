@@ -251,65 +251,6 @@ def mcnemar(obs: _np.ndarray) -> _pd.DataFrame:
     return df.T
 
 
-def weighted_means(
-    obs: _np.ndarray,
-    u:  _np.ndarray,
-    v:  _np.ndarray
-) -> tuple[float, float]:
-    """Return the weighted row and column means of an Rx2 contingency table.
-
-    Args:
-        obs: Rx2 contingency table representing representing a\
-            dose-response analysis.   
-        n: sample size
-        u: row integer scores
-        v: column integer scores
-
-    Returns:
-        weighted row mean, weighted col mean
-    """
-    ubar, vbar = 0, 0
-    for i in range(obs.shape[0]):
-        for j in range(obs.shape[1]):
-            ubar += ((u[i] * obs[i, j]) / obs.sum())
-            vbar += ((v[j] * obs[i, j]) / obs.sum())
-    return ubar, vbar
-
-
-def weighted_pearsonr(
-    obs: _np.ndarray,
-    scores: list[list[int]] = None
-) -> float:
-    """Return the weight Pearson correlation coefficient.
-
-    Reference: https://online.stat.psu.edu/stat504/book/export/html/710
-
-    Args:
-        obs: Rx2 contingency table representing representing dose-response\
-            analysis.   
-        scores: Integer scores for the rows and columns. If None is pass,\
-            then arbitrary integer scores are assigned.
-
-    Returns:
-        Weighted Pearson correlation coefficient.
-    """
-    # scores
-    if scores is None:
-        u, v = _np.arange(1, obs.shape[0] + 1), _np.arange(1, 3)
-    else:
-        u, v = scores[0], scores[1]
-    # sample size and integer scores for row and columns
-    ubar, vbar = weighted_means(obs, obs.sum(), u, v)
-    print(ubar, vbar)
-    num, den1, den2 = 0, 0, 0
-    for i in range(obs.shape[0]):
-        for j in range(obs.shape[1]):
-            num += (u[i] * ubar) * (v[j] * vbar) * obs[i, j]
-            den1 += ((u[i] * ubar)**2 * obs[i, j])
-            den2 += ((v[j] * vbar)**2 * obs[i, j])
-    return num / _math.sqrt(den1 * den2)    
-
-
 def odds(obs: _np.ndarray) -> _pd.DataFrame:
     """Return the odds of disease for each exposure dose in a dose-response\
     analysis.
@@ -348,51 +289,80 @@ def midranks(obs: _np.ndarray) -> _np.ndarray:
     """Return the midrank scores for an array.
 
     Ref: https://online.stat.psu.edu/stat504/lesson/4/4.1/4.1.2
+
+    Args:
+        obs: Rx2 contingency table representing representing a\
+            dose-response analysis.   
+
+    Returns:
+        Midranks of each dose to be used as the weighted scores.
     """
-    ranks = _np.empty(shape=(obs.shape[0]))
+    scores = _np.empty(shape=(obs.shape[0]))
     rowsums = obs.sum(1)
     rowcounter = 0
     for i in range(len(rowsums)):
-        ranks[i] += (rowcounter + ((1 + rowsums[i]) / 2))
+        scores[i] += (rowcounter + ((1 + rowsums[i]) / 2))
         rowcounter += rowsums[i]
-    return ranks
+    return scores
+
+
+def weighted_means(obs: _np.ndarray, scores: _np.ndarray) -> tuple[float, float]:
+    """Return the weighted row and column means of an Rx2 contingency table.
+
+    Args:
+        obs: Rx2 contingency table representing representing a\
+            dose-response analysis.   
+        scores: Weightings of each dose.
+
+    Returns:
+        Weighted row mean, weighted col mean
+    """
+    r, c = scores[0], scores[1]
+    ubar, vbar = 0, 0
+    for i in range(obs.shape[0]):
+        for j in range(obs.shape[1]):
+            ubar += ((r[i] * obs[i, j]) / obs.sum())
+            vbar += ((c[j] * obs[i, j]) / obs.sum())
+    return ubar, vbar
 
 
 def cov(obs: _np.ndarray, scores: _np.ndarray) -> float:
     """Return the covariance of an RxC array.
 
     Args:
-        obs: [description]
+        obs: Rx2 contingency table representing representing a\
+            dose-response analysis.   
 
     Returns:
         Covariance of rows and columns.
     """
-    u, v = scores[0], scores[1]
-    ubar, vbar = weighted_means(obs, u, v)
+    r, c = scores[0], scores[1]
+    rbar, cbar = weighted_means(obs, r, c)
     cov = 0
-    for i in range(len(u)):
-        for j in range(len(v)):
-            cov += (u[i] - ubar) * (v[j] - vbar) * obs[i, j]
+    for i in range(len(r)):
+        for j in range(len(c)):
+            cov += (r[i] - rbar) * (c[j] - cbar) * obs[i, j]
     return cov
 
 
 def stddev(obs: _np.ndarray, scores: _np.ndarray) -> float:
-    """Return the standard deviation of the rows.
+    """Return the standard deviation of the rows and columns.
 
     Args:
-        obs: [description]
+        obs: Rx2 contingency table representing representing a\
+            dose-response analysis.   
 
     Returns:
         Covariance of rows and columns.
     """
-    u, v = scores[0], scores[1]
-    ubar, vbar = weighted_means(obs, u, v)
-    varx, vary = 0, 0
-    for i in range(len(u)):
-        for j in range(len(v)):
-            varx += (u[i] - ubar)**2 * obs[i, j]
-            vary += (v[j] - vbar)**2 * obs[i, j]
-    return _math.sqrt(varx), _math.sqrt(vary)
+    r, c = scores[0], scores[1]
+    rbar, cbar = weighted_means(obs, scores)
+    rvar, cvar = 0, 0
+    for i in range(len(r)):
+        for j in range(len(c)):
+            rvar += (r[i] - rbar)**2 * obs[i, j]
+            cvar += (c[j] - cbar)**2 * obs[i, j]
+    return _math.sqrt(rvar), _math.sqrt(cvar)
 
 
 def corrcoeff(obs: _np.ndarray, scores: _np.ndarray) -> float:
@@ -430,3 +400,61 @@ def chisq_lineartrend(obs: _np.ndarray) -> _pd.DataFrame:
     df = _pd.DataFrame(index=["chisq", "pval"])
     df["result"] = [chisq, pval]
     return df.T
+
+
+def samplesize(
+    alpha: float,
+    gamma: float,
+    prop_treat: float,
+    prop_cont: float,
+    loss: float = 0.0
+) -> float:
+    """Return the sample size for a trial with equal sized treatment and\
+        control groups.
+
+    Args:
+        alpha: Significance level.
+        gamma: Power of test.
+        prop_treat: Design value, estimated value of P(Disease|Treatment).
+        prop_cont: Design value, estimated value of P(Disease|Control).
+        loss: estimated loss to follow-up as a percentage. Default is 0.0
+
+    Returns:
+        Required sample size of each group, rounded to 6 dp.
+    """
+    qsig = _st.norm().ppf(1-alpha/2)
+    qpow = _st.norm().ppf(gamma)
+    prop_zero = 0.5 * (prop_treat + prop_cont)
+    size = (
+        2 * ((qsig + qpow) ** 2) * prop_zero * (1 - prop_zero)
+        / ((prop_treat - prop_cont) ** 2)
+    )
+    adj: float = 1 / (1-(loss/100))
+    return round(size * adj, 6)
+
+
+def power(
+    size: int,
+    alpha: float,
+    prop_treat: float,
+    prop_cont: float
+) -> int:
+    """Return the power available in trial with treatment, control groups\
+        of a given size.
+
+    Args:
+        size: Number of participants in a single. Note total size of\
+            trial would be 2 * size.
+        alpha: Significance level.
+        gamma: Power of test
+        prop_treat: Design value, estimated value of P(Disease|Treatment)
+        prop_cont: Design value, estimated value of P(Disease|Control)
+
+    Returns:
+        Power of the trial as a percentage, rounded to 6dp.
+    """
+    prop_diff = abs(prop_treat - prop_cont)
+    prop_zero = 0.5 * (prop_treat + prop_cont)
+    qsig = _st.norm().ppf(1-alpha/2)
+    qpow = prop_diff * _math.sqrt(size / (2*prop_zero*(1-prop_zero))) - qsig
+    return round(100 * _st.norm().cdf(qpow), 6)

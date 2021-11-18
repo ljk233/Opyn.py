@@ -53,7 +53,7 @@ class ZSample():
     """Models a one or two sample **z**-test.
 
     Implemented to support scenarios where the sample mean, standard deviation,
-    and number of observations from some population are iven, rather the data.
+    and number of observations from some population are given, rather the data.
     """
 
     def __init__(self, mean: float, std: float, nobs: int) -> None:
